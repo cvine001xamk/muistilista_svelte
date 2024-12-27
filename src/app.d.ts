@@ -8,6 +8,22 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+
+	interface Tehtava {
+		id: number;
+		nimi: string;
+		suoritusvali: number;
+		kertasuoritus: boolean;
+		created_at: string;
+	}
+
+	interface Suoritus {
+		id: number;
+		suoritettu: string;
+		tehtava_id: number;
+		suorittaja?: string | null;
+		tehtava_nimi: string;
+	}
 }
 
 export {};
