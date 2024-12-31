@@ -1,16 +1,62 @@
 <script lang="ts">
 	import { haeTehtavat } from '$lib';
+	import { supabase } from '$lib/supabase';
+	import { onMount } from 'svelte';
 	import Tehtavarivi from './Tehtavarivi.svelte';
 
-	let tehtavat: Tehtava[] = [];
+	let sortedTehtavat: Tehtava[] = [];
 
-	haeTehtavat().then((data) => {
-		tehtavat = data;
+	function laskeJaljellaOlevaAika(tehtava: Tehtava, edellinenSuoritus: string | null): number {
+		const now = new Date();
+		const referenceDate = edellinenSuoritus
+			? new Date(edellinenSuoritus)
+			: new Date(tehtava.created_at);
+
+		const diffInMs = now.getTime() - referenceDate.getTime();
+		const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+		return tehtava.suoritusvali - diffInDays;
+	}
+
+	async function haeJaJarjestaTehtavat() {
+		const data = await haeTehtavat();
+
+		const enrichedTehtavat = await Promise.all(
+			data.map(async (tehtava) => {
+				const { data: suoritusData } = await supabase
+					.from('suoritukset')
+					.select('suoritettu')
+					.eq('tehtava_id', tehtava.id)
+					.order('suoritettu', { ascending: false })
+					.limit(1);
+
+				const edellinenSuoritus = suoritusData?.[0]?.suoritettu || null;
+				const remainingTime = laskeJaljellaOlevaAika(tehtava, edellinenSuoritus);
+
+				return {
+					...tehtava,
+					remainingTime
+				};
+			})
+		);
+
+		sortedTehtavat = enrichedTehtavat.sort((a, b) => a.remainingTime - b.remainingTime);
+	}
+
+	const tehtavatSubscription = supabase
+		.channel('schema-db-changes')
+		.on('postgres_changes', { event: '*', schema: 'public', table: 'tehtavat' }, () => {
+			haeJaJarjestaTehtavat();
+		})
+		.subscribe();
+
+	onMount(() => {
+		haeJaJarjestaTehtavat();
 	});
 </script>
 
 <div class="flex flex-col items-center justify-center">
-	{#each tehtavat as tehtava}
+	{#each sortedTehtavat as tehtava}
 		<Tehtavarivi {tehtava} />
 	{/each}
 </div>
