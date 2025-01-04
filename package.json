@@ -12,6 +12,9 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint ."
 	},
+	"engines": {
+		"node": ">=18.x"
+	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.3",
 		"@iconify/svelte": "^4.1.0",
