@@ -4,14 +4,14 @@
 
 @font-face {
 	font-family: 'Gabarito';
-	src: url('/fonts/Gabarito-VariableFont_wght.ttf') format('truetype');
+	src: url('lib/fonts/Gabarito-VariableFont_wght.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
 }
 
 @font-face {
 	font-family: 'Pacifico';
-	src: url('/fonts/Pacifico-Regular.ttf') format('truetype');
+	src: url('lib/fonts/Pacifico-Regular.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
 }

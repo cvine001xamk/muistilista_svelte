@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import { fi } from 'date-fns/locale';
 	import { formatDistanceToNow } from 'date-fns';
+	import OneIcon from '../lib/icons/MUIOneIcon.svelte';
+	import PenIcon from '../lib/icons/SquarePenIcon.svelte';
 
 	import { createDialog, melt } from '@melt-ui/svelte';
 	const {
@@ -12,11 +14,20 @@
 
 	export let tehtava: Tehtava;
 
+	let updatedValues = {
+		nimi: tehtava.nimi,
+		suoritusvali: tehtava.suoritusvali,
+		kertasuoritus: tehtava.kertasuoritus
+	};
+
 	let edellinenSuoritus: string | null = null;
 	let aikaJaljella: string | null = null;
 	let remainingTime: number | null = null;
-	let loading = true;
+	let loading: boolean = true;
+	let editing: boolean = false;
 	let bgColor: string = 'bg-gray-500';
+	let suoritaClickCount: number = 0;
+	let poistaClickCount: number = 0;
 
 	$: {
 		if (!loading && remainingTime !== null) {
@@ -87,6 +98,38 @@
 		if (tehtava.kertasuoritus) {
 			poista();
 		}
+
+		open.set(false);
+	}
+
+	function handleSuoritaClick() {
+		if (suoritaClickCount === 0) {
+			suoritaClickCount++;
+		} else {
+			suorita();
+		}
+	}
+
+	function handlePoistaClick() {
+		if (poistaClickCount === 0) {
+			poistaClickCount++;
+		} else {
+			poista();
+		}
+	}
+
+	async function handleSubmit(): Promise<void> {
+		const { data, error } = await supabase
+			.from('tehtavat')
+			.update(updatedValues)
+			.eq('id', tehtava.id);
+
+		if (error) {
+			console.error('Error updating tehtava:', error);
+			return;
+		}
+
+		open.set(false);
 	}
 
 	async function poista(): Promise<void> {
@@ -112,18 +155,24 @@
 		use:melt={$trigger}
 		class="mb-2 w-full rounded-md {bgColor} bg-opacity-85 p-2 drop-shadow-md"
 	>
-		<div class="flex flex-row justify-between">
-			<p class="overflow-x-hidden text-base">{tehtava.nimi}</p>
-			<p>{tehtava.kertasuoritus ? 'kerta' : null}</p>
-		</div>
-		<div class="flex flex-row justify-between">
-			<div class="flex flex-col text-sm">
-				<p>Edellinen suoritus: {loading ? 'Ladataan...' : edellinenSuoritus}</p>
-				<p>Aikaa jäljellä: {loading ? 'Ladataan...' : aikaJaljella}</p>
+		<div class="flex flex-col">
+			<div class="flex flex-row justify-between">
+				<p class="overflow-x-hidden text-base">{tehtava.nimi}</p>
+				<p>
+					{#if tehtava.kertasuoritus}
+						<OneIcon />
+					{/if}
+				</p>
 			</div>
-			<p class="badge badge-outline badge-sm rounded bg-gray-400 p-2">
-				{tehtava.suoritusvali}
-			</p>
+			<div class="flex justify-start text-sm">
+				Edellinen suoritus: {loading ? 'Ladataan...' : edellinenSuoritus}
+			</div>
+			<div class="flex flex-row justify-between text-sm">
+				<p>Aikaa jäljellä: {loading ? 'Ladataan...' : aikaJaljella}</p>
+				<span class="me-2 rounded bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+					{tehtava.suoritusvali}
+				</span>
+			</div>
 		</div>
 	</button>
 {/if}
@@ -133,33 +182,78 @@
 		<div use:melt={$overlay} class="fixed inset-0 z-50 bg-black/50">
 			<div
 				use:melt={$content}
-				class="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-[90vw]
-					max-w-[450px] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white
+				class="fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-[90vw] max-w-[450px] -translate-x-1/2 -translate-y-1/2
+					flex-col gap-4 rounded-xl bg-white
 					p-6 shadow-lg"
 			>
-				<h2 use:melt={$title}>{tehtava.nimi}</h2>
-				<p use:melt={$description}>Juttua</p>
 				<button
-					on:click={suorita}
-					class="inline-flex h-8 items-center justify-center rounded-sm
-                    bg-zinc-100 px-4 text-zinc-600"
+					aria-label="Muokkaa tehtävää"
+					on:click={() => (editing = !editing)}
+					class="flex justify-end {editing && 'text-sky-600'}"
 				>
-					Suorita
+					<PenIcon />
 				</button>
-				<button
-					on:click={poista}
-					class="inline-flex h-8 items-center justify-center rounded-sm
+				{#if editing}
+					<p class="text-base text-gray-700">Muokkaa tehtävää:</p>
+					<div use:melt={$description}>
+						<form on:submit|preventDefault={handleSubmit} class="w-full gap-4">
+							<label for="nimi" class="mb-2 block text-sm font-medium text-gray-700">Nimi:</label>
+							<input
+								id="nimi"
+								type="text"
+								class="w-full rounded-md border p-2"
+								bind:value={updatedValues.nimi}
+							/>
+							<label for="suoritusvali" class="mb-2 block text-sm font-medium text-gray-700"
+								>Suoritusväli:</label
+							>
+							<input
+								id="suoritusvali"
+								type="number"
+								class="w-full rounded-md border p-2"
+								bind:value={updatedValues.suoritusvali}
+							/>
+							<label for="kertasuoritus" class="mb-2 block text-sm font-medium text-gray-700"
+								>Kertasuoritus:</label
+							>
+							<input
+								id="kertasuoritus"
+								type="checkbox"
+								class="w-full rounded-md border p-2"
+								bind:checked={updatedValues.kertasuoritus}
+							/>
+							<button
+								type="submit"
+								class="btn mt-4 w-full rounded-sm border-slate-400 bg-sky-600 p-2 text-white hover:bg-sky-400"
+							>
+								Tallenna
+							</button>
+						</form>
+					</div>
+				{:else}
+					<h2 use:melt={$title}>{tehtava.nimi}</h2>
+					<button
+						on:click={handleSuoritaClick}
+						class="inline-flex h-8 items-center justify-center rounded-sm
+                    	{suoritaClickCount === 0 ? 'bg-lime-600' : 'bg-lime-400'} px-4 text-zinc-600"
+					>
+						{suoritaClickCount === 0 ? 'Suorita' : 'Vahvista suoritus?'}
+					</button>
+					<button
+						on:click={handlePoistaClick}
+						class="inline-flex h-8 items-center justify-center rounded-sm
+						{poistaClickCount === 0 ? 'bg-red-300' : 'bg-red-600'} px-4 text-zinc-600"
+					>
+						{poistaClickCount === 0 ? 'Poista' : 'Vahvista poisto?'}
+					</button>
+					<button
+						use:melt={$close}
+						class="inline-flex h-8 items-center justify-center rounded-sm
 				bg-zinc-100 px-4 text-zinc-600"
-				>
-					Poista
-				</button>
-				<button
-					use:melt={$close}
-					class="inline-flex h-8 items-center justify-center rounded-sm
-				bg-zinc-100 px-4 text-zinc-600"
-				>
-					Sulje
-				</button>
+					>
+						Sulje
+					</button>
+				{/if}
 			</div>
 		</div>
 	</div>

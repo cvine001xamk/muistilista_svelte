@@ -50,8 +50,20 @@
 		})
 		.subscribe();
 
+	const suorituksetSubscription = supabase
+		.channel('schema-db-changes')
+		.on('postgres_changes', { event: '*', schema: 'public', table: 'suoritukset' }, () => {
+			haeJaJarjestaTehtavat();
+		})
+		.subscribe();
+
 	onMount(() => {
 		haeJaJarjestaTehtavat();
+
+		return () => {
+			tehtavatSubscription.unsubscribe();
+			suorituksetSubscription.unsubscribe();
+		};
 	});
 </script>
 
