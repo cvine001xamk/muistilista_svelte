@@ -6,6 +6,7 @@
 
 	let sortedTehtavat: Tehtava[] = [];
 	let loading: boolean = true;
+	let tasksWithLessThanOneDay: number = 0;
 
 	function laskeJaljellaOlevaAika(tehtava: Tehtava, edellinenSuoritus: string | null): number {
 		const now = new Date();
@@ -34,6 +35,10 @@
 				const edellinenSuoritus = suoritusData?.[0]?.suoritettu || null;
 				const remainingTime = laskeJaljellaOlevaAika(tehtava, edellinenSuoritus);
 
+				if (remainingTime < 1) {
+					tasksWithLessThanOneDay++;
+				}
+
 				return {
 					...tehtava,
 					remainingTime
@@ -42,7 +47,22 @@
 		);
 
 		sortedTehtavat = enrichedTehtavat.sort((a, b) => a.remainingTime - b.remainingTime);
+
 		loading = false;
+
+		updateBadge(tasksWithLessThanOneDay);
+	}
+
+	function updateBadge(count: number) {
+		if ('setAppBadge' in navigator) {
+			if (count > 0) {
+				navigator.setAppBadge(count).catch((err) => console.error('Failed to set app badge:', err));
+			} else {
+				navigator.clearAppBadge().catch((err) => console.error('Failed to clear app badge:', err));
+			}
+		} else {
+			console.warn('Badging API not supported in this browser.');
+		}
 	}
 
 	const tehtavatSubscription = supabase
