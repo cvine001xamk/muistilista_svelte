@@ -23,20 +23,15 @@
 	function updateBadge(count: number) {
 		if ('setAppBadge' in navigator) {
 			if (count > 0) {
-				navigator
-					.setAppBadge(count)
-					.then(() => alert(`Badge set successfully to ${count}`))
-					.catch((err) => alert(`Failed to set badge: ${err.message}`));
+				navigator.setAppBadge(count).catch((err) => console.error('Failed to set app badge:', err));
 			} else {
-				navigator
-					.clearAppBadge()
-					.then(() => alert('Badge cleared successfully'))
-					.catch((err) => alert(`Failed to clear badge: ${err.message}`));
+				navigator.clearAppBadge().catch((err) => console.error('Failed to clear app badge:', err));
 			}
 		} else {
-			alert('Badging API not supported on this browser.');
+			console.warn('Badging API not supported in this browser.');
 		}
 	}
+
 	async function haeJaJarjestaTehtavat() {
 		const data = await haeTehtavat();
 
@@ -70,6 +65,20 @@
 		loading = false;
 
 		updateBadge(tasksWithLessThanOneDay);
+
+		if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+			navigator.serviceWorker.ready.then((registration) => {
+				const notificationOptions = {
+					body: `You have ${tasksWithLessThanOneDay} tasks pending!`,
+					badge: '/path-to-badge-icon.png',
+					icon: '/path-to-icon.png',
+					tag: 'task-update',
+					silent: true
+				};
+
+				registration.showNotification('Task Reminder', notificationOptions);
+			});
+		}
 	}
 
 	const tehtavatSubscription = supabase
