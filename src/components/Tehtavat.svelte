@@ -5,6 +5,7 @@
 	import Tehtavarivi from './Tehtavarivi.svelte';
 
 	let sortedTehtavat: Tehtava[] = [];
+	let loading: boolean = true;
 
 	function laskeJaljellaOlevaAika(tehtava: Tehtava, edellinenSuoritus: string | null): number {
 		const now = new Date();
@@ -41,6 +42,7 @@
 		);
 
 		sortedTehtavat = enrichedTehtavat.sort((a, b) => a.remainingTime - b.remainingTime);
+		loading = false;
 	}
 
 	const tehtavatSubscription = supabase
@@ -67,8 +69,16 @@
 	});
 </script>
 
-<div class="flex flex-col items-center justify-center">
-	{#each sortedTehtavat as tehtava}
-		<Tehtavarivi {tehtava} />
-	{/each}
-</div>
+{#if loading}
+	<div class="flex h-96 items-center justify-center">
+		<div
+			class="flex h-16 w-16 animate-spin rounded-full border-8 border-gray-300 border-t-blue-600"
+		></div>
+	</div>
+{:else}
+	<div class="flex flex-col items-center justify-center">
+		{#each sortedTehtavat as tehtava}
+			<Tehtavarivi {tehtava} />
+		{/each}
+	</div>
+{/if}

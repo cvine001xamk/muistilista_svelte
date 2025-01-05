@@ -148,34 +148,30 @@
 	});
 </script>
 
-{#if loading}
-	<span> Ladataan... </span>
-{:else}
-	<button
-		use:melt={$trigger}
-		class="mb-2 w-full rounded-md {bgColor} bg-opacity-85 p-2 drop-shadow-md"
-	>
-		<div class="flex flex-col">
-			<div class="flex flex-row justify-between">
-				<p class="overflow-x-hidden text-base">{tehtava.nimi}</p>
-				<p>
-					{#if tehtava.kertasuoritus}
-						<OneIcon />
-					{/if}
-				</p>
-			</div>
-			<div class="flex justify-start text-sm">
-				Edellinen suoritus: {loading ? 'Ladataan...' : edellinenSuoritus}
-			</div>
-			<div class="flex flex-row justify-between text-sm">
-				<p>Aikaa jäljellä: {loading ? 'Ladataan...' : aikaJaljella}</p>
-				<span class="me-2 rounded bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-					{tehtava.suoritusvali}
-				</span>
-			</div>
+<button
+	use:melt={$trigger}
+	class="mb-2 w-full rounded-md {bgColor} bg-opacity-85 p-2 drop-shadow-md"
+>
+	<div class="flex flex-col">
+		<div class="flex flex-row justify-between">
+			<p class="overflow-x-hidden text-base">{tehtava.nimi}</p>
+			<p>
+				{#if tehtava.kertasuoritus}
+					<OneIcon />
+				{/if}
+			</p>
 		</div>
-	</button>
-{/if}
+		<div class="flex justify-start text-sm">
+			Edellinen suoritus: {loading ? 'Ladataan...' : edellinenSuoritus}
+		</div>
+		<div class="flex flex-row justify-between text-sm">
+			<p>Aikaa jäljellä: {loading ? 'Ladataan...' : aikaJaljella}</p>
+			<span class="me-2 rounded bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+				{tehtava.suoritusvali}
+			</span>
+		</div>
+	</div>
+</button>
 
 {#if $open}
 	<div use:melt={$portalled}>
@@ -213,15 +209,17 @@
 								class="w-full rounded-md border p-2"
 								bind:value={updatedValues.suoritusvali}
 							/>
-							<label for="kertasuoritus" class="mb-2 block text-sm font-medium text-gray-700"
-								>Kertasuoritus:</label
-							>
-							<input
-								id="kertasuoritus"
-								type="checkbox"
-								class="w-full rounded-md border p-2"
-								bind:checked={updatedValues.kertasuoritus}
-							/>
+							<span class="flex flex-row items-center">
+								<label for="kertasuoritus" class="mb-2 block text-sm font-medium text-gray-700"
+									>Kertasuoritus:</label
+								>
+								<input
+									id="kertasuoritus"
+									type="checkbox"
+									class="w-full rounded-md border p-2"
+									bind:checked={updatedValues.kertasuoritus}
+								/>
+							</span>
 							<button
 								type="submit"
 								class="btn mt-4 w-full rounded-sm border-slate-400 bg-sky-600 p-2 text-white hover:bg-sky-400"
