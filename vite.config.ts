@@ -20,6 +20,12 @@ export default defineConfig({
 						type: 'image/png'
 					},
 					{
+						src: '/logo512maskable.png',
+						sizes: '512x512',
+						type: 'image/png',
+						purpose: 'maskable'
+					},
+					{
 						src: '/logo1024.png',
 						sizes: '1024x1024',
 						type: 'image/png'
