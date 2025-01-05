@@ -23,15 +23,20 @@
 	function updateBadge(count: number) {
 		if ('setAppBadge' in navigator) {
 			if (count > 0) {
-				navigator.setAppBadge(count).catch((err) => console.error('Failed to set app badge:', err));
+				navigator
+					.setAppBadge(count)
+					.then(() => alert(`Badge set successfully to ${count}`))
+					.catch((err) => alert(`Failed to set badge: ${err.message}`));
 			} else {
-				navigator.clearAppBadge().catch((err) => console.error('Failed to clear app badge:', err));
+				navigator
+					.clearAppBadge()
+					.then(() => alert('Badge cleared successfully'))
+					.catch((err) => alert(`Failed to clear badge: ${err.message}`));
 			}
 		} else {
-			console.warn('Badging API not supported in this browser.');
+			alert('Badging API not supported on this browser.');
 		}
 	}
-
 	async function haeJaJarjestaTehtavat() {
 		const data = await haeTehtavat();
 
