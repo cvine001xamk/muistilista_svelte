@@ -65,20 +65,6 @@
 		loading = false;
 
 		updateBadge(tasksWithLessThanOneDay);
-
-		if ('serviceWorker' in navigator && Notification.permission === 'granted') {
-			navigator.serviceWorker.ready.then((registration) => {
-				const notificationOptions = {
-					body: `You have ${tasksWithLessThanOneDay} tasks pending!`,
-					badge: '/path-to-badge-icon.png',
-					icon: '/path-to-icon.png',
-					tag: 'task-update',
-					silent: true
-				};
-
-				registration.showNotification('Task Reminder', notificationOptions);
-			});
-		}
 	}
 
 	const tehtavatSubscription = supabase
