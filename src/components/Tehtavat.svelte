@@ -6,7 +6,7 @@
 
 	let sortedTehtavat: Tehtava[] = [];
 	let loading: boolean = true;
-	let tasksWithLessThanOneDay: number = 5;
+	let tasksWithLessThanOneDay: number = 0;
 
 	function laskeJaljellaOlevaAika(tehtava: Tehtava, edellinenSuoritus: string | null): number {
 		const now = new Date();
@@ -34,6 +34,8 @@
 
 	async function haeJaJarjestaTehtavat() {
 		const data = await haeTehtavat();
+
+		tasksWithLessThanOneDay = 0;
 
 		const enrichedTehtavat = await Promise.all(
 			data.map(async (tehtava) => {
