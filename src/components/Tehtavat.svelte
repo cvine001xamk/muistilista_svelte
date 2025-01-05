@@ -6,7 +6,7 @@
 
 	let sortedTehtavat: Tehtava[] = [];
 	let loading: boolean = true;
-	let tasksWithLessThanOneDay: number = 0;
+	let tasksWithLessThanOneDay: number = 5;
 
 	function laskeJaljellaOlevaAika(tehtava: Tehtava, edellinenSuoritus: string | null): number {
 		const now = new Date();
