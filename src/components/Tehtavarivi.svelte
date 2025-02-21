@@ -1,43 +1,59 @@
 <script lang="ts">
 	import { supabase } from '$lib/supabase';
-	import { onMount } from 'svelte';
 	import { fi } from 'date-fns/locale';
 	import { formatDistanceToNow } from 'date-fns';
 	import OneIcon from '../lib/icons/MUIOneIcon.svelte';
 	import PenIcon from '../lib/icons/SquarePenIcon.svelte';
 
 	import { createDialog, melt } from '@melt-ui/svelte';
+	import { fade } from 'svelte/transition';
 	const {
 		elements: { trigger, portalled, overlay, content, title, description, close },
 		states: { open }
 	} = createDialog();
 
-	export let tehtava: Tehtava;
+	let { tehtava, haeJaJarjestaTehtavat }: { tehtava: Tehtava; haeJaJarjestaTehtavat: () => void } =
+		$props();
 
-	let updatedValues = {
+	let updatedValues = $state({
 		nimi: tehtava.nimi,
 		suoritusvali: tehtava.suoritusvali,
 		kertasuoritus: tehtava.kertasuoritus
-	};
+	});
 
-	let edellinenSuoritus: string | null = null;
-	let aikaJaljella: string | null = null;
-	let remainingTime: number | null = null;
-	let loading: boolean = true;
-	let editing: boolean = false;
-	let bgColor: string = 'bg-gray-500';
-	let suoritaClickCount: number = 0;
-	let poistaClickCount: number = 0;
+	let edellinenSuoritus = $state<string | null>(null);
+	let aikaJaljella = $state<string | null>(null);
+	let remainingTime = $state<number | null>(null);
+	let loading = $state(true);
+	let editing = $state(false);
+	let suoritaClickCount: number = $state(0);
+	let poistaClickCount: number = $state(0);
 
-	$: {
-		if (!loading && remainingTime !== null) {
-			if (remainingTime <= 2) bgColor = 'bg-red-500';
-			else if (remainingTime <= 3) bgColor = 'bg-yellow-600';
-			else if (remainingTime <= 5) bgColor = 'bg-yellow-500';
-			else if (remainingTime <= 14) bgColor = 'bg-green-500';
-			else bgColor = 'bg-green-600';
+	let bgColor: string = $state('bg-gray-500');
+
+	$effect(() => {
+		if (loading || remainingTime === null) {
+			bgColor = 'bg-gray-500';
+			return;
 		}
-	}
+
+		switch (true) {
+			case remainingTime <= 2:
+				bgColor = 'bg-red-500';
+				break;
+			case remainingTime <= 3:
+				bgColor = 'bg-yellow-600';
+				break;
+			case remainingTime <= 5:
+				bgColor = 'bg-yellow-500';
+				break;
+			case remainingTime <= 14:
+				bgColor = 'bg-green-500';
+				break;
+			default:
+				bgColor = 'bg-green-600';
+		}
+	});
 
 	function calculateAikaJaljella(edellinenSuoritusDate: string | null): void {
 		const now = new Date();
@@ -80,7 +96,7 @@
 	}
 
 	async function suorita(): Promise<void> {
-		const { data, error } = await supabase.from('suoritukset').insert({
+		const { error } = await supabase.from('suoritukset').insert({
 			tehtava_id: tehtava.id,
 			suoritettu: new Date().toISOString(),
 			suorittaja: 'Tuntematon',
@@ -100,6 +116,8 @@
 		}
 
 		open.set(false);
+
+		haeJaJarjestaTehtavat();
 	}
 
 	function handleSuoritaClick() {
@@ -118,11 +136,9 @@
 		}
 	}
 
-	async function handleSubmit(): Promise<void> {
-		const { data, error } = await supabase
-			.from('tehtavat')
-			.update(updatedValues)
-			.eq('id', tehtava.id);
+	async function handleSubmit(e: SubmitEvent): Promise<void> {
+		e.preventDefault();
+		const { error } = await supabase.from('tehtavat').update(updatedValues).eq('id', tehtava.id);
 
 		if (error) {
 			console.error('Error updating tehtava:', error);
@@ -143,7 +159,7 @@
 		open.set(false);
 	}
 
-	onMount(() => {
+	$effect(() => {
 		haeEdellinenSuoritus();
 	});
 </script>
@@ -178,13 +194,14 @@
 		<div use:melt={$overlay} class="fixed inset-0 z-50 bg-black/50">
 			<div
 				use:melt={$content}
+				transition:fade
 				class="fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-[90vw] max-w-[450px] -translate-x-1/2 -translate-y-1/2
 					flex-col gap-4 rounded-xl bg-white
 					p-6 shadow-lg"
 			>
 				<button
 					aria-label="Muokkaa tehtävää"
-					on:click={() => (editing = !editing)}
+					onclick={() => (editing = !editing)}
 					class="flex justify-end {editing && 'text-sky-600'}"
 				>
 					<PenIcon />
@@ -192,7 +209,7 @@
 				{#if editing}
 					<p class="text-base text-gray-700">Muokkaa tehtävää:</p>
 					<div use:melt={$description}>
-						<form on:submit|preventDefault={handleSubmit} class="w-full gap-4">
+						<form onsubmit={handleSubmit} class="w-full gap-4">
 							<label for="nimi" class="mb-2 block text-sm font-medium text-gray-700">Nimi:</label>
 							<input
 								id="nimi"
@@ -231,23 +248,23 @@
 				{:else}
 					<h2 use:melt={$title}>{tehtava.nimi}</h2>
 					<button
-						on:click={handleSuoritaClick}
-						class="inline-flex h-8 items-center justify-center rounded-sm
-                    	{suoritaClickCount === 0 ? 'bg-lime-600' : 'bg-lime-400'} px-4 text-zinc-600"
+						onclick={handleSuoritaClick}
+						class="inline-flex h-8 items-center justify-center rounded-sm text-zinc-800
+                    	{suoritaClickCount === 0 ? 'bg-lime-400' : 'bg-lime-600 text-zinc-50'} px-4"
 					>
 						{suoritaClickCount === 0 ? 'Suorita' : 'Vahvista suoritus?'}
 					</button>
 					<button
-						on:click={handlePoistaClick}
-						class="inline-flex h-8 items-center justify-center rounded-sm
-						{poistaClickCount === 0 ? 'bg-red-300' : 'bg-red-600'} px-4 text-zinc-600"
+						onclick={handlePoistaClick}
+						class="inline-flex h-8 items-center justify-center rounded-sm text-zinc-800
+						{poistaClickCount === 0 ? 'bg-red-400' : 'bg-red-600 text-zinc-50'} px-4"
 					>
 						{poistaClickCount === 0 ? 'Poista' : 'Vahvista poisto?'}
 					</button>
 					<button
 						use:melt={$close}
 						class="inline-flex h-8 items-center justify-center rounded-sm
-				bg-zinc-100 px-4 text-zinc-600"
+				bg-zinc-300 px-4 text-zinc-800"
 					>
 						Sulje
 					</button>

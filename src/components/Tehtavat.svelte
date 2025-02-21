@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { haeTehtavat } from '$lib';
 	import { supabase } from '$lib/supabase';
-	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import Tehtavarivi from './Tehtavarivi.svelte';
 
-	let sortedTehtavat: Tehtava[] = [];
-	let loading: boolean = true;
-	let tasksWithLessThanOneDay: number = 0;
+	let sortedTehtavat = $state<Tehtava[]>([]);
+	let loading: boolean = $state(true);
+	let tasksWithLessThanOneDay: number = $state(0);
 
 	function laskeJaljellaOlevaAika(tehtava: Tehtava, edellinenSuoritus: string | null): number {
 		const now = new Date();
@@ -33,6 +33,7 @@
 	}
 
 	async function haeJaJarjestaTehtavat() {
+		loading = true;
 		const data = await haeTehtavat();
 
 		tasksWithLessThanOneDay = 0;
@@ -62,26 +63,28 @@
 
 		sortedTehtavat = enrichedTehtavat.sort((a, b) => a.remainingTime - b.remainingTime);
 
-		loading = false;
+		setTimeout(() => {
+			loading = false;
+		}, 100);
 
 		updateBadge(tasksWithLessThanOneDay);
 	}
 
 	const tehtavatSubscription = supabase
-		.channel('schema-db-changes')
+		.channel('tehtavat-changes')
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'tehtavat' }, () => {
 			haeJaJarjestaTehtavat();
 		})
 		.subscribe();
 
 	const suorituksetSubscription = supabase
-		.channel('schema-db-changes')
+		.channel('suoritukset-changes')
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'suoritukset' }, () => {
 			haeJaJarjestaTehtavat();
 		})
 		.subscribe();
 
-	onMount(() => {
+	$effect(() => {
 		haeJaJarjestaTehtavat();
 
 		return () => {
@@ -98,9 +101,9 @@
 		></div>
 	</div>
 {:else}
-	<div class="flex flex-col items-center justify-center">
+	<div class="flex flex-col items-center justify-center" in:fade>
 		{#each sortedTehtavat as tehtava}
-			<Tehtavarivi {tehtava} />
+			<Tehtavarivi {tehtava} {haeJaJarjestaTehtavat} />
 		{/each}
 	</div>
 {/if}

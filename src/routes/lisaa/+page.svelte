@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabase';
+	import { fade } from 'svelte/transition';
 
 	let nimi: string = '';
 	let kertasuoritus: boolean = false;
 	let suoritusvali: number = 0;
 
-	async function handleSubmit() {
+	async function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
 		const formData = {
 			nimi,
 			kertasuoritus,
@@ -26,8 +28,8 @@
 	}
 </script>
 
-<div class="flex justify-center">
-	<form on:submit|preventDefault={handleSubmit} class="w-full gap-4">
+<div class="flex justify-center" in:fade>
+	<form onsubmit={handleSubmit} class="w-full gap-4">
 		<div class="flex flex-col justify-center gap-4 rounded-lg bg-slate-600 p-4">
 			<label for="nimi" class="text-lg">Tehtävän nimi:</label>
 
