@@ -7,6 +7,7 @@
 
 	import { createDialog, melt } from '@melt-ui/svelte';
 	import { fade } from 'svelte/transition';
+	import TehtavaDialog from './TehtavaDialog.svelte';
 	const {
 		elements: { trigger, portalled, overlay, content, title, description, close },
 		states: { open }
@@ -24,10 +25,12 @@
 	let edellinenSuoritus = $state<string | null>(null);
 	let aikaJaljella = $state<string | null>(null);
 	let remainingTime = $state<number | null>(null);
-	let loading = $state(true);
-	let editing = $state(false);
-	let suoritaClickCount: number = $state(0);
-	let poistaClickCount: number = $state(0);
+	let loading: boolean = $state(true);
+	let editing: boolean = $state(false);
+	let confirmSuorita: boolean = $state(false);
+	let confirmPoista: boolean = $state(false);
+	let resetSuoritaTimeout: any;
+	let resetPoistaTimeout: any;
 
 	let bgColor: string = $state('bg-gray-500');
 
@@ -96,6 +99,14 @@
 	}
 
 	async function suorita(): Promise<void> {
+		if (!confirmSuorita) {
+			confirmSuorita = true;
+			resetSuoritaTimeout = setTimeout(() => (confirmSuorita = false), 3000);
+			return;
+		}
+
+		clearTimeout(resetSuoritaTimeout);
+
 		const { error } = await supabase.from('suoritukset').insert({
 			tehtava_id: tehtava.id,
 			suoritettu: new Date().toISOString(),
@@ -120,22 +131,6 @@
 		haeJaJarjestaTehtavat();
 	}
 
-	function handleSuoritaClick() {
-		if (suoritaClickCount === 0) {
-			suoritaClickCount++;
-		} else {
-			suorita();
-		}
-	}
-
-	function handlePoistaClick() {
-		if (poistaClickCount === 0) {
-			poistaClickCount++;
-		} else {
-			poista();
-		}
-	}
-
 	async function handleSubmit(e: SubmitEvent): Promise<void> {
 		e.preventDefault();
 		const { error } = await supabase.from('tehtavat').update(updatedValues).eq('id', tehtava.id);
@@ -149,6 +144,13 @@
 	}
 
 	async function poista(): Promise<void> {
+		if (!confirmPoista) {
+			confirmPoista = true;
+			resetPoistaTimeout = setTimeout(() => (confirmPoista = false), 3000);
+			return;
+		}
+
+		clearTimeout(resetPoistaTimeout);
 		const { error } = await supabase.from('tehtavat').delete().eq('id', tehtava.id);
 
 		if (error) {
@@ -248,18 +250,18 @@
 				{:else}
 					<h2 use:melt={$title}>{tehtava.nimi}</h2>
 					<button
-						onclick={handleSuoritaClick}
+						onclick={suorita}
 						class="inline-flex h-8 items-center justify-center rounded-sm text-zinc-800
-                    	{suoritaClickCount === 0 ? 'bg-lime-400' : 'bg-lime-600 text-zinc-50'} px-4"
+                    	{confirmSuorita ? 'bg-lime-400' : 'bg-lime-600 text-zinc-50'} px-4"
 					>
-						{suoritaClickCount === 0 ? 'Suorita' : 'Vahvista suoritus?'}
+						{!confirmSuorita ? 'Suorita' : 'Vahvista suoritus?'}
 					</button>
 					<button
-						onclick={handlePoistaClick}
+						onclick={poista}
 						class="inline-flex h-8 items-center justify-center rounded-sm text-zinc-800
-						{poistaClickCount === 0 ? 'bg-red-400' : 'bg-red-600 text-zinc-50'} px-4"
+						{!confirmPoista ? 'bg-red-400' : 'bg-red-600 text-zinc-50'} px-4"
 					>
-						{poistaClickCount === 0 ? 'Poista' : 'Vahvista poisto?'}
+						{!confirmPoista ? 'Poista' : 'Vahvista poisto?'}
 					</button>
 					<button
 						use:melt={$close}
