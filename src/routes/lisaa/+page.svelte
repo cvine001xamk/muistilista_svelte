@@ -30,8 +30,8 @@
 
 <div class="flex justify-center" in:fade>
 	<form onsubmit={handleSubmit} class="w-full gap-4">
-		<div class="flex flex-col justify-center gap-4 rounded-lg bg-slate-600 p-4">
-			<label for="nimi" class="text-lg">Tehtävän nimi:</label>
+		<div class="flex flex-col justify-center gap-4 rounded-lg bg-slate-200 p-4">
+			<label for="nimi" class="text-lg text-slate-900">Tehtävän nimi:</label>
 
 			<input
 				id="nimi"
@@ -42,7 +42,7 @@
 				required
 			/>
 			<span class="flex flex-row items-center gap-4">
-				<label for="kertasuoritus" class="text-lg">Kertasuoritus:</label>
+				<label for="kertasuoritus" class="text-lg text-slate-900">Kertasuoritus:</label>
 
 				<input
 					id="kertasuoritus"
@@ -51,7 +51,7 @@
 					class="size-5 border-2 border-zinc-700 p-2"
 				/>
 			</span>
-			<label for="suoritusvali" class="text-lg">Suoritusväli päivinä:</label>
+			<label for="suoritusvali" class="text-lg text-slate-900">Suoritusväli päivinä:</label>
 
 			<input
 				id="suoritusvali"

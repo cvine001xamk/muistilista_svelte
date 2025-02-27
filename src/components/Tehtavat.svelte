@@ -20,17 +20,17 @@
 		return tehtava.suoritusvali - diffInDays;
 	}
 
-	function updateBadge(count: number) {
-		if ('setAppBadge' in navigator) {
-			if (count > 0) {
-				navigator.setAppBadge(count).catch((err) => console.error('Failed to set app badge:', err));
-			} else {
-				navigator.clearAppBadge().catch((err) => console.error('Failed to clear app badge:', err));
-			}
-		} else {
-			console.warn('Badging API not supported in this browser.');
-		}
-	}
+	// function updateBadge(count: number) {
+	// 	if ('setAppBadge' in navigator) {
+	// 		if (count > 0) {
+	// 			navigator.setAppBadge(count).catch((err) => console.error('Failed to set app badge:', err));
+	// 		} else {
+	// 			navigator.clearAppBadge().catch((err) => console.error('Failed to clear app badge:', err));
+	// 		}
+	// 	} else {
+	// 		console.warn('Badging API not supported in this browser.');
+	// 	}
+	// }
 
 	async function haeJaJarjestaTehtavat() {
 		loading = true;
@@ -67,7 +67,7 @@
 			loading = false;
 		}, 100);
 
-		updateBadge(tasksWithLessThanOneDay);
+		// updateBadge(tasksWithLessThanOneDay);
 	}
 
 	const tehtavatSubscription = supabase

@@ -2,39 +2,55 @@
 	import { haeSuoritukset } from '$lib';
 	import { fade } from 'svelte/transition';
 
-	let suoritukset: Suoritus[] = [];
-	let ladattu: boolean = false;
+	let suoritukset = $state<Suoritus[]>([]);
+	let ladattu: boolean = $state(false);
+	let selectedTehtava = $state<string | null>(null);
 
-	$: sortedSuoritukset = [...suoritukset].sort(
-		(a, b) => new Date(b.id).getTime() - new Date(a.id).getTime()
+	const sortedSuoritukset = $derived(
+		[...suoritukset].sort((a, b) => new Date(b.id).getTime() - new Date(a.id).getTime())
+	);
+
+	const filteredSuoritukset = $derived(
+		selectedTehtava
+			? sortedSuoritukset.filter((s) => s.tehtava_nimi === selectedTehtava)
+			: sortedSuoritukset
 	);
 
 	haeSuoritukset().then((data) => {
 		suoritukset = data;
 		ladattu = true;
 	});
+
+	function toggleFilter(tehtava: string) {
+		selectedTehtava = selectedTehtava === tehtava ? null : tehtava;
+	}
 </script>
 
 {#if ladattu}
-	<div class="overflow-x-auto" in:fade>
-		<table class="table-auto border-collapse border border-gray-300 text-sm">
+	<div class="max-w-full overflow-x-auto" in:fade>
+		<table class="w-full table-fixed border-collapse border border-gray-300 text-sm">
 			<thead class="bg-gray-600">
 				<tr>
-					<th>Tehtävä</th>
-					<th>Suoritettu</th>
-					<th>Merkinnyt</th>
+					<th class="w-[55%] min-w-[150px]">Tehtävä</th>
+					<th class="w-[20%]">Suoritettu</th>
+					<th class="w-[25%]">Merkinnyt</th>
 				</tr>
 			</thead>
 			<tbody>
-				{#each sortedSuoritukset as suoritus}
+				{#each filteredSuoritukset as suoritus}
 					<tr>
-						<td class="border border-gray-300 px-4 py-1">
+						<td
+							class="whitespace-normal break-words border border-gray-300 px-2 py-1"
+							onclick={() => toggleFilter(suoritus.tehtava_nimi)}
+						>
 							{suoritus.tehtava_nimi}
 						</td>
-						<td class="border border-gray-300 px-4 py-1">
+						<td class="border border-gray-300 px-2 py-1">
 							{new Date(suoritus.suoritettu).toLocaleDateString('fi-FI')}
 						</td>
-						<td class="border border-gray-300 px-4 py-1">
+						<td
+							class="overflow-hidden text-ellipsis whitespace-nowrap border border-gray-300 px-2 py-1"
+						>
 							{suoritus.suorittaja}
 						</td>
 					</tr>
