@@ -15,7 +15,7 @@
 			suoritusvali
 		};
 
-		const { data, error } = await supabase.from('tehtavat').insert(formData);
+		const { error } = await supabase.from('tehtavat').insert(formData);
 
 		if (error) {
 			console.error('Virhe tehtävän lisäämisessä:', error);

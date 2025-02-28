@@ -1,15 +1,8 @@
 <script lang="ts">
-	import SearchIcon from '../lib/icons/SearchIcon.svelte';
 	import PlusIcon from '../lib/icons/PlusIcon.svelte';
 	import SheetIcon from '../lib/icons/SheetIcon.svelte';
-
-	let searching: boolean = false;
-	let hakusana: string = '';
-
-	function toggleSearch() {
-		// searching = !searching;
-		// console.log(searching);
-	}
+	import ShoppingIcon from '$lib/icons/ShoppingIcon.svelte';
+	import FruitIcon from '$lib/icons/FruitIcon.svelte';
 </script>
 
 <div class="bg-sky-400 p-2">
@@ -23,14 +16,11 @@
 		<a href="/suoritukset" class="btn btn-primary" aria-label="Suoritukset">
 			<SheetIcon />
 		</a>
-		<button class="btn btn-primary" aria-label="Suoritukset" on:click={toggleSearch}>
-			<SearchIcon />
-		</button>
+		<a href="/ostoslista" class="btn btn-primary" aria-label="Ostoslista">
+			<ShoppingIcon />
+		</a>
+		<a href="/sesongissa" class="btn btn-primary" aria-label="Sesonkikalenteri">
+			<FruitIcon />
+		</a>
 	</div>
-
-	{#if searching}
-		<div class="mx-auto mt-2 flex w-60 text-slate-900">
-			<input type="text" class="w-full border" placeholder="Hae tehtäviä" />
-		</div>
-	{/if}
 </div>

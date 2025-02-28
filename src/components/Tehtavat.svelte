@@ -3,10 +3,20 @@
 	import { supabase } from '$lib/supabase';
 	import { fade } from 'svelte/transition';
 	import Tehtavarivi from './Tehtavarivi.svelte';
+	import DeleteIcon from '$lib/icons/DeleteIcon.svelte';
 
 	let sortedTehtavat = $state<Tehtava[]>([]);
 	let loading: boolean = $state(true);
 	let tasksWithLessThanOneDay: number = $state(0);
+	let searchTerm = $state<string>('');
+
+	const filteredTehtavat = $derived(
+		searchTerm.length > 1
+			? sortedTehtavat.filter((tehtava) =>
+					tehtava.nimi.toLowerCase().includes(searchTerm.toLowerCase())
+				)
+			: sortedTehtavat
+	);
 
 	function laskeJaljellaOlevaAika(tehtava: Tehtava, edellinenSuoritus: string | null): number {
 		const now = new Date();
@@ -65,7 +75,7 @@
 
 		setTimeout(() => {
 			loading = false;
-		}, 100);
+		}, 200);
 
 		updateBadge(tasksWithLessThanOneDay);
 	}
@@ -102,7 +112,24 @@
 	</div>
 {:else}
 	<div class="flex flex-col items-center justify-center" in:fade>
-		{#each sortedTehtavat as tehtava}
+		<div class="relative mb-4 w-full max-w-md">
+			<input
+				type="text"
+				bind:value={searchTerm}
+				placeholder="Etsi tehtävää..."
+				class="w-full rounded-lg border border-gray-300 px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+			/>
+			{#if searchTerm}
+				<button
+					onclick={() => (searchTerm = '')}
+					class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-700 hover:text-gray-700"
+				>
+					<DeleteIcon />
+				</button>
+			{/if}
+		</div>
+
+		{#each filteredTehtavat as tehtava}
 			<Tehtavarivi {tehtava} {haeJaJarjestaTehtavat} />
 		{/each}
 	</div>
