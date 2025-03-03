@@ -94,7 +94,7 @@
 	</button>
 
 	<div class="mt-6 overflow-x-auto">
-		<table class="w-full">
+		<table class="w-full text-sm">
 			<thead>
 				<tr class="border-b border-gray-200">
 					<th class="px-2 py-2 text-left">Tuote</th>

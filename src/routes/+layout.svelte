@@ -6,7 +6,7 @@
 </script>
 
 <div
-	class="mx-auto flex min-h-screen flex-col items-center gap-4 overflow-x-hidden bg-pink-800 text-white md:p-8"
+	class="gradient-bg mx-auto flex min-h-screen flex-col items-center gap-4 overflow-x-hidden text-white md:p-8"
 >
 	<div class="fixed top-0 z-50 w-full">
 		<Navigaatio />
@@ -15,3 +15,9 @@
 		{@render children()}
 	</div>
 </div>
+
+<style>
+	.gradient-bg {
+		background: linear-gradient(135deg, #8f057c, #590261);
+	}
+</style>
