@@ -11,6 +11,7 @@
 	};
 
 	// --- Data Loading and Casting ---
+	// Casts the imported JSON data to the expected type structure.
 	const seasonalProduceData: Record<number, SeasonalData> = seasonalDataFromJson as Record<
 		number,
 		SeasonalData
@@ -18,36 +19,46 @@
 
 	// --- State for Displayed Month ---
 	const today = new Date();
-	const currentRealMonthIndex = today.getMonth(); // 0-11
-	let displayedMonthIndex = currentRealMonthIndex; // 0-11
+	const currentRealMonthIndex = today.getMonth(); // 0-11 (January is 0)
+	let displayedMonthIndex = currentRealMonthIndex; // State variable for the currently viewed month index
 
 	// --- Reactive Calculations ---
+	// Calculate the displayed month number (1-12) based on the index (0-11).
 	$: displayedMonthNumber = displayedMonthIndex + 1;
+	// Get the raw produce data for the displayed month, defaulting to an empty object if not found.
 	$: rawProduce = seasonalProduceData[displayedMonthNumber] || {};
 
 	// --- Utility Functions ---
+
+	/** Sorts an array of strings alphabetically according to Finnish locale rules. */
 	const sortFinnishAlphabetically = (arr: string[] | undefined | null): string[] => {
 		if (Array.isArray(arr)) {
+			// Create a shallow copy before sorting to avoid mutating the original array
 			return [...arr].sort((a, b) => a.localeCompare(b, 'fi'));
 		}
-		return [];
+		return []; // Return empty array if input is not a valid array
 	};
 
+	/** Converts a string to Title Case (first letter uppercase, rest lowercase). Handles leading hyphens. */
 	const toTitleCase = (str: string | undefined | null): string => {
-		if (!str) return '';
+		if (!str) return ''; // Return empty string for null or undefined input
 		const trimmedStr = str.trim();
-		if (trimmedStr.length === 0) return '';
+		if (trimmedStr.length === 0) return ''; // Return empty string for empty/whitespace-only input
+		// Handle specific case for leading hyphen if needed
 		if (trimmedStr.startsWith('-')) {
 			return '-' + trimmedStr.charAt(1).toUpperCase() + trimmedStr.slice(2).toLowerCase();
 		}
+		// Standard title case
 		return trimmedStr.charAt(0).toUpperCase() + trimmedStr.slice(1).toLowerCase();
 	};
 
+	/** Checks if an array exists and has items. */
 	const hasItems = (items: string[] | undefined): boolean => {
 		return Array.isArray(items) && items.length > 0;
 	};
 
 	// --- Reactive Processed Data ---
+	// Creates a processed object where each category's items are sorted alphabetically.
 	$: currentProduce = {
 		fruits_and_berries: sortFinnishAlphabetically(rawProduce.fruits_and_berries),
 		vegetables: sortFinnishAlphabetically(rawProduce.vegetables),
@@ -71,18 +82,23 @@
 		'Marraskuu',
 		'Joulukuu'
 	];
-	$: displayedFinnishMonthName = finnishMonthNames[displayedMonthIndex] || 'Tuntematon';
+	// Gets the Finnish name for the currently displayed month.
+	$: displayedFinnishMonthName = finnishMonthNames[displayedMonthIndex] || 'Tuntematon'; // Default fallback
 
 	// --- Navigation Functions ---
+
+	/** Navigates to the previous month, wrapping around from January to December. */
 	function goToPreviousMonth() {
-		displayedMonthIndex = (displayedMonthIndex + 12 - 1) % 12;
+		displayedMonthIndex = (displayedMonthIndex + 12 - 1) % 12; // Modulo arithmetic for wrap-around
 	}
 
+	/** Navigates to the next month, wrapping around from December to January. */
 	function goToNextMonth() {
-		displayedMonthIndex = (displayedMonthIndex + 1) % 12;
+		displayedMonthIndex = (displayedMonthIndex + 1) % 12; // Modulo arithmetic for wrap-around
 	}
 
 	// --- Styling Map ---
+	// Defines display properties (title, background, colors) for each produce category.
 	const categoryStyles: Record<
 		keyof SeasonalData,
 		{ title: string; bg: string; iconColor: string; textColor: string; border?: string }
@@ -118,6 +134,7 @@
 			textColor: 'text-cyan-50'
 		}
 	};
+	// Defines the order in which categories should be displayed.
 	const categoryKeys: (keyof SeasonalData)[] = [
 		'fruits_and_berries',
 		'vegetables',
@@ -125,6 +142,7 @@
 		'mushrooms',
 		'wild_plants'
 	];
+	// Default style for unknown or fallback categories.
 	const defaultStyle = {
 		title: 'Tuntematon',
 		bg: 'bg-gray-700/80',
@@ -133,67 +151,85 @@
 	};
 </script>
 
-<!-- Template with 95% width container and Sticky Header -->
-<div class="min-h-screen bg-gradient-to-br from-slate-900 to-slate-700 font-sans text-slate-100">
-	<!-- Main Content Area - 95% Width -->
-	<main class="mx-auto w-[95%] px-4 py-10 sm:px-6 lg:px-8">
-		<!-- Header with Navigation Buttons -->
-		<div class="top-0 z-10 bg-slate-900 py-4 text-center">
-			<button
-				on:click={goToPreviousMonth}
-				aria-label="Edellinen kuukausi"
-				class="absolute left-0 top-1/2 -translate-y-1/2 rounded-full p-2 text-slate-400 transition hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900"
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-10 w-10 sm:h-12 sm:w-12"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
-					><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg
+<!-- Component Template -->
+<div
+	class="min-h-screen rounded-md bg-gradient-to-br from-slate-900 to-slate-700 font-sans text-slate-100"
+>
+	<main class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+		<!-- Header Section: Month Navigation and Title -->
+		<div class="top-0 z-10 rounded-3xl bg-sky-800 py-4">
+			<!-- Flex container to align buttons and title -->
+			<div class="relative mx-auto flex max-w-lg items-center justify-between">
+				<!-- Previous Month Button -->
+				<button
+					onclick={goToPreviousMonth}
+					aria-label="Edellinen kuukausi"
+					class="rounded-full p-2 text-slate-400 transition hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900"
 				>
-			</button>
-			<h2
-				class="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl"
-			>
-				{displayedFinnishMonthName}
-			</h2>
-			<p class="mt-2 text-lg text-slate-300 sm:mt-3 sm:text-xl">Kauden parhaat antimet</p>
-			<button
-				on:click={goToNextMonth}
-				aria-label="Seuraava kuukausi"
-				class="absolute right-0 top-1/2 -translate-y-1/2 rounded-full p-2 text-slate-400 transition hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900"
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-10 w-10 sm:h-12 sm:w-12"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
-					><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-10 w-10 sm:h-12 sm:w-12"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+						><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg
+					>
+				</button>
+
+				<!-- Month Title and Subtitle -->
+				<div class="text-center">
+					<h2
+						class="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent md:text-5xl"
+					>
+						{displayedFinnishMonthName}
+					</h2>
+					<p class="mt-2 text-lg text-slate-300 md:mt-3 md:text-xl">Kauden parhaat antimet</p>
+				</div>
+
+				<!-- Next Month Button -->
+				<button
+					onclick={goToNextMonth}
+					aria-label="Seuraava kuukausi"
+					class="rounded-full p-2 text-slate-400 transition hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900"
 				>
-			</button>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-10 w-10 sm:h-12 sm:w-12"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+						><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg
+					>
+				</button>
+			</div>
 		</div>
 
-		<!-- Grid for Cards - Added margin-top for spacing below sticky header -->
+		<!-- Grid Layout for Produce Category Cards -->
 		<div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+			<!-- Iterate over defined category keys to maintain order -->
 			{#each categoryKeys as categoryKey}
 				{@const items = currentProduce[categoryKey]}
+				<!-- Only render card if the category has items for the current month -->
 				{#if hasItems(items)}
 					{@const style = categoryStyles[categoryKey] || defaultStyle}
+					<!-- Get styles or use default -->
+					<!-- Category Card -->
 					<div
 						class={`rounded-2xl border border-white/10 ${style.bg} p-5 shadow-xl backdrop-blur-sm`}
 					>
+						<!-- Card Title -->
 						<h3 class={`mb-4 border-b border-white/20 pb-2 text-xl font-semibold text-white`}>
 							{style.title}
 						</h3>
+						<!-- List of Items -->
 						<ul class="space-y-1.5">
 							{#each items as item}
 								<li
 									class={`flex items-center text-base ${style.textColor} transition hover:text-white`}
 								>
+									<!-- List Item Icon -->
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
 										class={`mr-2 h-5 w-5 flex-shrink-0 ${style.iconColor}`}
@@ -206,6 +242,7 @@
 											clip-rule="evenodd"
 										/>
 									</svg>
+									<!-- List Item Text (Title Case) -->
 									<span class="break-words">{toTitleCase(item)}</span>
 								</li>
 							{/each}
@@ -215,12 +252,13 @@
 			{/each}
 		</div>
 
+		<!-- Footer Section -->
 		<footer class="mt-12 text-center text-sm text-slate-400">Satokausikalenteri 2025</footer>
 	</main>
 </div>
 
 <style>
-	/* Optional global styles */
+	/* Optional global styles for body font */
 	:global(body) {
 		font-family:
 			system-ui,
