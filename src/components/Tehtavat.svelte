@@ -44,38 +44,59 @@
 
 	async function haeJaJarjestaTehtavat() {
 		loading = true;
-		const data = await haeTehtavat();
+		const tehtavatData = await haeTehtavat();
 
-		tasksWithLessThanOneDay = 0;
+		if (!tehtavatData || tehtavatData.length === 0) {
+			sortedTehtavat = [];
+			loading = false;
+			updateBadge(0);
+			return;
+		}
 
-		const enrichedTehtavat = await Promise.all(
-			data.map(async (tehtava) => {
-				const { data: suoritusData } = await supabase
-					.from('suoritukset')
-					.select('suoritettu')
-					.eq('tehtava_id', tehtava.id)
-					.order('suoritettu', { ascending: false })
-					.limit(1);
+		const taskIds = tehtavatData.map((t) => t.id);
 
-				const edellinenSuoritus = suoritusData?.[0]?.suoritettu || null;
-				const remainingTime = laskeJaljellaOlevaAika(tehtava, edellinenSuoritus);
+		const { data: latestSuorituksetData, error: suoritusError } = await supabase
+			.from('suoritukset')
+			.select('tehtava_id, suoritettu')
+			.in('tehtava_id', taskIds)
+			.order('suoritettu', { ascending: false });
 
-				if (remainingTime < 1) {
-					tasksWithLessThanOneDay++;
+		if (suoritusError) {
+			console.error('Error fetching suoritukset:', suoritusError);
+		}
+
+		// Process in JS to find the latest for each task_id
+		const latestSuoritusMap = new Map<string, string>();
+		if (latestSuorituksetData) {
+			latestSuorituksetData.sort(
+				(a, b) => new Date(b.suoritettu).getTime() - new Date(a.suoritettu).getTime()
+			);
+			latestSuorituksetData.forEach((s) => {
+				if (!latestSuoritusMap.has(s.tehtava_id)) {
+					latestSuoritusMap.set(s.tehtava_id, s.suoritettu);
 				}
+			});
+		}
 
-				return {
-					...tehtava,
-					remainingTime
-				};
-			})
-		);
+		tasksWithLessThanOneDay = 0; // Reset counter
+
+		const enrichedTehtavat = tehtavatData.map((tehtava) => {
+			const edellinenSuoritus = latestSuoritusMap.get(tehtava.id) || null;
+			const remainingTime = laskeJaljellaOlevaAika(tehtava, edellinenSuoritus);
+
+			if (remainingTime < 1) {
+				tasksWithLessThanOneDay++;
+			}
+
+			return {
+				...tehtava,
+				remainingTime
+			};
+		});
 
 		sortedTehtavat = enrichedTehtavat.sort((a, b) => a.remainingTime - b.remainingTime);
 
-		setTimeout(() => {
-			loading = false;
-		}, 200);
+		loading = false;
 
 		updateBadge(tasksWithLessThanOneDay);
 	}
@@ -105,10 +126,13 @@
 </script>
 
 {#if loading}
-	<div class="flex h-96 items-center justify-center">
+	<div class="w-full space-y-3 md:max-w-3xl">
 		<div
-			class="flex h-16 w-16 animate-spin rounded-full border-8 border-gray-300 border-t-blue-600"
+			class="mx-auto flex h-8 w-8 animate-spin rounded-full border-8 border-gray-300 border-t-blue-600"
 		></div>
+		{#each { length: 10 } as _}
+			<div class="h-20 w-full animate-pulse rounded-lg bg-gray-700/50"></div>
+		{/each}
 	</div>
 {:else}
 	<div class="flex flex-col items-center justify-center md:max-w-3xl" in:fade>
@@ -129,7 +153,7 @@
 			{/if}
 		</div>
 
-		{#each filteredTehtavat as tehtava}
+		{#each filteredTehtavat as tehtava (tehtava.id)}
 			<Tehtavarivi {tehtava} {haeJaJarjestaTehtavat} />
 		{/each}
 	</div>
