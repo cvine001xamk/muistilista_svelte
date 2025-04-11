@@ -1,0 +1,317 @@
+{
+	"1": {
+		"fruits_and_berries": [
+			"APPELSIINI",
+			"FEIJOA",
+			"GREIPPI",
+			"HUNAJAPOMELO",
+			"KIIVI",
+			"KLEMENTIINI",
+			"KOOKOSPÄHKINÄ",
+			"KUMKVATTI",
+			"OMENA",
+			"SUKLAA-APPELSIINI",
+			"SWEETIE",
+			"VERIAPPELSIINI",
+			"VERIGREIPPI"
+		],
+		"vegetables": ["INKIVÄÄRI", "KELTASIPULI", "LEHTIKAALI", "PUNAKAALI", "SALOTTISIPULI"],
+		"root_vegetables": ["BATAATTI", "MAA-ARTISOKKA", "MUSTAJUURI", "PORKKANA"]
+	},
+	"2": {
+		"fruits_and_berries": [
+			"ANNOONA",
+			"APPELSIINI",
+			"AVOKADO",
+			"GREIPPI",
+			"GUAVA",
+			"HUNAJAPOMELO",
+			"KIIVI",
+			"LIMETTI",
+			"RUMELIINI",
+			"SHARON",
+			"SWEETIE",
+			"VERIAPPELSIINI",
+			"VERIGREIPPI",
+			"VERIMANDARIINI"
+		],
+		"vegetables": ["KURKUMA", "SALAATTIFENKOLI", "VALKOKAALI", "VALKOSIPULI"],
+		"root_vegetables": ["BATAATTI", "JUURIPERSILJA", "MUSTAJUURI"]
+	},
+	"3": {
+		"fruits_and_berries": [
+			"ANANASKIRSIKKA",
+			"AVOKADO",
+			"BANAANI",
+			"GREIPPI",
+			"KEITTOBANAANI",
+			"KOOKOSPÄHKINÄ",
+			"LIMETTI",
+			"MANDARIINI",
+			"MANGO",
+			"PAPAIJA",
+			"PASSIOHEDELMÄ",
+			"PUOLIVERIAPPELSIINI",
+			"VERIAPPELSIINI"
+		],
+		"vegetables": ["LATVA-ARTISOKKA"],
+		"root_vegetables": [
+			"BATAATTI",
+			"MAA-ARTISOKKA",
+			"MANIOKKI",
+			"PALSTERNAKKA",
+			"PIPARJUURI",
+			"PERUNA",
+			"PURPPURABATAATTI"
+		]
+	},
+	"4": {
+		"fruits_and_berries": [
+			"ANANASKIRSIKKA",
+			"KARAMBOLA",
+			"MANDARIINI",
+			"SITRUUNA",
+			"MINIANANAS",
+			"PASSIOHEDELMÄ",
+			"PITAIJA",
+			"PEPINO",
+			"RAMBUTANI",
+			"VERIGREIPPI"
+		],
+		"vegetables": [
+			"MANGOLDI",
+			"PARSA",
+			"PIMIENTOS DE PADRON",
+			"PAPRIKAT",
+			"VARSIKUKKAKAALI",
+			"VARSIPARSAKAALI"
+		],
+		"root_vegetables": ["BATAATTI"],
+		"wild_plants": ["HUHTASIENI", "MAITOHORSMA", "NOKKONEN", "VOIKUKKA", "VUOHENPUTKI"]
+	},
+	"5": {
+		"fruits_and_berries": [
+			"HUNAJAMELONI",
+			"LITSI",
+			"LOKVATTI",
+			"MANDARIINI",
+			"MANGOSTANI",
+			"PAPAIJA",
+			"PARAGUAYO-PERSIKKA",
+			"TAMARILLO"
+		],
+		"vegetables": [
+			"KIRSIKKATOMAATTI",
+			"RUOHOSIPULI",
+			"VARSISELLERI",
+			"VARSIKUKKAKAALI",
+			"VARSIPARSAKAALI",
+			"VIHANNESKRASSI"
+		],
+		"root_vegetables": ["RETIISI", "VARHAISPERUNA"],
+		"mushrooms": ["KORVASIENI"],
+		"wild_plants": ["KETUNLEIPÄ", "KUUSENKERKKÄ", "NOKKONEN", "VOIKUKKA"]
+	},
+	"6": {
+		"fruits_and_berries": [
+			"APRIKOOSI",
+			"CANTALOUPEMELONI",
+			"KIRSIKKA",
+			"LONGAANI",
+			"NEKTARIINI",
+			"PARAGUAYO-PERSIKKA",
+			"PERSIKKA",
+			"VERKKOMELONI",
+			"VESIMELONI"
+		],
+		"vegetables": [
+			"HERNE",
+			"KERÄSALAATTI",
+			"KEVÄTSIPULI",
+			"KURKKU",
+			"LUUMUTOMAATTI",
+			"PIHVITOMAATTI",
+			"PURJOSIPULI",
+			"RUCOLA",
+			"RUOHOSIPULI",
+			"VARHAISKAALI"
+		],
+		"root_vegetables": ["NAURIS", "PORKKANA", "RETIISI", "RETIKKA", "VARHAISPERUNA"]
+	},
+	"7": {
+		"fruits_and_berries": [
+			"AHOMANSIKKA",
+			"APRIKOOSI",
+			"HERUKAT",
+			"MANSIKKA",
+			"MELONIT",
+			"MESIMARJA",
+			"NEKTARIINI",
+			"PERSIKAT",
+			"VADELMA",
+			"VIINIRYPÄLEET"
+		],
+		"vegetables": [
+			"AVOMAANKURKKU",
+			"CHILIT",
+			"ENDIIVIT",
+			"KESÄKURPITSA",
+			"KUKKAKAALIT",
+			"KYSSÄKAALI",
+			"MANGOLDI",
+			"PARSAKAALI",
+			"PINAATTI",
+			"SALAATIT",
+			"SIPULIT",
+			"TOMAATIT",
+			"TARHAPAVUT",
+			"VARSISELLERI",
+			"VUONANKAALI"
+		],
+		"root_vegetables": []
+	},
+	"8": {
+		"fruits_and_berries": [
+			"KARHUNVATUKKA",
+			"KARVIAINEN",
+			"LAKKA",
+			"LILLUKKA",
+			"LUUMU",
+			"MUSTIKKA",
+			"OMENAT (kesälajikkkeet)",
+			"RIEKONMARJA",
+			"SASKATOON",
+			"VADELMA",
+			"VIIKUNA"
+		],
+		"vegetables": [
+			"CHILIT",
+			"FENKOLI",
+			"HÄRKÄPAPU",
+			"KERÄSALAATTI",
+			"KURKKU",
+			"LATVA-ARTISOKKA",
+			"LEHTISALAATIT",
+			"MAISSI",
+			"MUNAKOISO",
+			"PAPRIKAT",
+			"SIPULIT",
+			"SUIPPOKAALI",
+			"TOMAATIT"
+		],
+		"root_vegetables": ["PUNAJUURI", "RAITAJUURI"],
+		"mushrooms": ["HERKKUTATTI", "KANTARELLI", "LAMPAANKÄÄPÄ"]
+	},
+	"9": {
+		"fruits_and_berries": [
+			"JUOLUKKA",
+			"KAKTUSVIIKUNA",
+			"KIWANO",
+			"KRIIKUNA",
+			"LUUMU",
+			"MARJA-ARONIA",
+			"OMENAT (syyslajikkeet)",
+			"PUOLUKKA",
+			"VARIKSENMARJA"
+		],
+		"vegetables": [
+			"FENKOLI",
+			"HÄRKÄPAPU",
+			"KAALI",
+			"KIINANKAALI",
+			"LATVA-ARTISOKKA",
+			"LEHTIKAALI",
+			"MAISSI",
+			"PINAATTIKIINAN-KAALI",
+			"SAVOIJINKAALI",
+			"SUIPPOPAPRIKA",
+			"VIHREÄ PAPU"
+		],
+		"root_vegetables": ["KAURAJUURI", "KELTAJUURI", "PALSTERNAKKA", "RETIKKA", "VALKOJUURI"],
+		"mushrooms": ["MUSTATORVISIENI", "SUPPILOVAHVERO", "TATIT"]
+	},
+	"10": {
+		"fruits_and_berries": [
+			"KATAJANMARJA",
+			"KARPALO",
+			"MANGO",
+			"OMENAT (talvilajikkeet)",
+			"PIHLAJANMARJAT",
+			"PUOLUKKA",
+			"PÄÄRYNÄT",
+			"SATSUMA",
+			"TYRNIMARJA"
+		],
+		"vegetables": [
+			"HOKKAIDOKURPITSA",
+			"KURPITSA",
+			"LEHTIKAALI",
+			"MUSTAKAALI",
+			"MYSKIKURPITSA",
+			"RUUSUKAALI",
+			"SALAATTISIKURI",
+			"SAVOIJINKAALI",
+			"SIPULIT",
+			"SPAGETTIKURPITSA",
+			"VALKOKAALI"
+		],
+		"root_vegetables": ["JAMSSI", "JUURIPERSILJA", "JUURISELLERI", "RAITAJUURI", "SOKERIJUURIKAS"],
+		"mushrooms": ["SUPPILOVAHVERO"]
+	},
+	"11": {
+		"fruits_and_berries": [
+			"GRANAATTIOMENA",
+			"GUAVA",
+			"OMENAPÄÄRYNÄ",
+			"OMENAT (talvilajikkeet)",
+			"PERSIMONI",
+			"SATSUMA"
+		],
+		"vegetables": [
+			"KAJOTTIKURPITSA",
+			"KURPITSA",
+			"KYSSÄKAALI",
+			"LEHTIKAALI",
+			"MUSTAKAALI",
+			"PURJOSIPULI",
+			"RUUSUKAALI",
+			"SALOTTISIPULI",
+			"SUIPPOKAALI"
+		],
+		"root_vegetables": [
+			"JUURISELLERI",
+			"KELTAJUURI",
+			"MAA-ARTISOKKA",
+			"NAURIS",
+			"PALSTERNAKKA",
+			"RAITAJUURI"
+		]
+	},
+	"12": {
+		"fruits_and_berries": [
+			"BERGAMOTTI",
+			"KAKI",
+			"KASTANJA",
+			"LIMEKAVIAARI",
+			"OMENAT",
+			"PERSIMONI",
+			"POMERANSSI",
+			"PÄÄRYNÄT",
+			"SATSUMA",
+			"SUKAATTISITRUUNA",
+			"SWEETIE",
+			"TAATELI"
+		],
+		"vegetables": ["KIINANKAALI", "MYSKIKURPITSA", "PUNAKAALI", "PUNASIPULI", "RUUSUKAALI"],
+		"root_vegetables": [
+			"BATAATTI",
+			"KAURAJUURI",
+			"KELTAJUURI",
+			"LANTTU",
+			"PUNAJUURI",
+			"PORKKANA",
+			"RAITAJUURIA",
+			"VÄRIPORKKANAT"
+		]
+	}
+}
