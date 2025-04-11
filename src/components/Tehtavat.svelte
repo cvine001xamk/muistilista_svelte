@@ -111,7 +111,7 @@
 		></div>
 	</div>
 {:else}
-	<div class="flex flex-col items-center justify-center" in:fade>
+	<div class="flex flex-col items-center justify-center md:max-w-3xl" in:fade>
 		<div class="relative mb-4 w-full max-w-md">
 			<input
 				type="text"

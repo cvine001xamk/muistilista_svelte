@@ -164,7 +164,7 @@
 				<button
 					onclick={goToPreviousMonth}
 					aria-label="Edellinen kuukausi"
-					class="rounded-full p-2 text-slate-400 transition hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+					class="rounded-full p-2 text-slate-400 transition hover:text-cyan-400 focus:outline-none"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -191,7 +191,7 @@
 				<button
 					onclick={goToNextMonth}
 					aria-label="Seuraava kuukausi"
-					class="rounded-full p-2 text-slate-400 transition hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+					class="rounded-full p-2 text-slate-400 transition hover:text-cyan-400"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
