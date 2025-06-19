@@ -5,7 +5,12 @@
 	import Tehtavarivi from './Tehtavarivi.svelte';
 	import DeleteIcon from '$lib/icons/DeleteIcon.svelte';
 
-	let sortedTehtavat = $state<Tehtava[]>([]);
+	type EnrichedTehtava = Tehtava & {
+		remainingTime: number;
+		edellinenSuoritus: string | null;
+	};
+
+	let sortedTehtavat = $state<EnrichedTehtava[]>([]);
 	let loading: boolean = $state(true);
 	let tasksWithLessThanOneDay: number = $state(0);
 	let searchTerm = $state<string>('');
@@ -42,7 +47,7 @@
 		}
 	}
 
-	async function haeJaJarjestaTehtavat() {
+	async function initialLoad() {
 		loading = true;
 		const tehtavatData = await haeTehtavat();
 
@@ -54,23 +59,14 @@
 		}
 
 		const taskIds = tehtavatData.map((t) => t.id);
-
-		const { data: latestSuorituksetData, error: suoritusError } = await supabase
+		const { data: latestSuorituksetData } = await supabase
 			.from('suoritukset')
 			.select('tehtava_id, suoritettu')
 			.in('tehtava_id', taskIds)
 			.order('suoritettu', { ascending: false });
 
-		if (suoritusError) {
-			console.error('Error fetching suoritukset:', suoritusError);
-		}
-
-		// Process in JS to find the latest for each task_id
 		const latestSuoritusMap = new Map<string, string>();
 		if (latestSuorituksetData) {
-			latestSuorituksetData.sort(
-				(a, b) => new Date(b.suoritettu).getTime() - new Date(a.suoritettu).getTime()
-			);
 			latestSuorituksetData.forEach((s) => {
 				if (!latestSuoritusMap.has(s.tehtava_id)) {
 					latestSuoritusMap.set(s.tehtava_id, s.suoritettu);
@@ -78,49 +74,68 @@
 			});
 		}
 
-		tasksWithLessThanOneDay = 0; // Reset counter
-
-		const enrichedTehtavat = tehtavatData.map((tehtava) => {
+		tasksWithLessThanOneDay = 0; // Reset counter for initial load
+		const enrichedTehtavat: EnrichedTehtava[] = tehtavatData.map((tehtava) => {
 			const edellinenSuoritus = latestSuoritusMap.get(tehtava.id) || null;
 			const remainingTime = laskeJaljellaOlevaAika(tehtava, edellinenSuoritus);
-
 			if (remainingTime < 1) {
 				tasksWithLessThanOneDay++;
 			}
-
-			return {
-				...tehtava,
-				remainingTime
-			};
+			return { ...tehtava, remainingTime, edellinenSuoritus };
 		});
 
 		sortedTehtavat = enrichedTehtavat.sort((a, b) => a.remainingTime - b.remainingTime);
-
 		loading = false;
-
 		updateBadge(tasksWithLessThanOneDay);
 	}
 
-	const tehtavatSubscription = supabase
-		.channel('tehtavat-changes')
-		.on('postgres_changes', { event: '*', schema: 'public', table: 'tehtavat' }, () => {
-			haeJaJarjestaTehtavat();
-		})
-		.subscribe();
+	function updateStateAndSort() {
+		tasksWithLessThanOneDay = sortedTehtavat.filter((t) => t.remainingTime < 1).length;
+		sortedTehtavat.sort((a, b) => a.remainingTime - b.remainingTime);
+		sortedTehtavat = sortedTehtavat; // Trigger Svelte reactivity
+		updateBadge(tasksWithLessThanOneDay);
+	}
 
-	const suorituksetSubscription = supabase
-		.channel('suoritukset-changes')
-		.on('postgres_changes', { event: '*', schema: 'public', table: 'suoritukset' }, () => {
-			haeJaJarjestaTehtavat();
+	const realtimeChannel = supabase
+		.channel('tehtavat-ja-suoritukset-changes')
+		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tehtavat' }, (payload) => {
+			console.log('New task received via subscription!', payload.new);
+			const uusiTehtavaData = payload.new as Tehtava;
+			const enrichedUusiTehtava: EnrichedTehtava = {
+				...uusiTehtavaData,
+				remainingTime: laskeJaljellaOlevaAika(uusiTehtavaData, null),
+				edellinenSuoritus: null
+			};
+			sortedTehtavat.push(enrichedUusiTehtava);
+			updateStateAndSort();
+		})
+		.on(
+			'postgres_changes',
+			{ event: 'INSERT', schema: 'public', table: 'suoritukset' },
+			(payload) => {
+				console.log('New completion received via subscription!', payload.new);
+				const uusiSuoritus = payload.new as { tehtava_id: number; suoritettu: string };
+				const index = sortedTehtavat.findIndex((t) => t.id === uusiSuoritus.tehtava_id);
+
+				if (index !== -1) {
+					const tehtava = sortedTehtavat[index];
+					tehtava.remainingTime = laskeJaljellaOlevaAika(tehtava, uusiSuoritus.suoritettu);
+					tehtava.edellinenSuoritus = uusiSuoritus.suoritettu;
+					updateStateAndSort();
+				}
+			}
+		)
+		.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tehtavat' }, (payload) => {
+			console.log('Task delete received via subscription!', payload.old);
+			sortedTehtavat = sortedTehtavat.filter((t) => t.id !== payload.old.id);
+			updateStateAndSort();
 		})
 		.subscribe();
 
 	$effect(() => {
-		haeJaJarjestaTehtavat();
-
+		initialLoad();
 		return () => {
-			tehtavatSubscription.unsubscribe();
-			suorituksetSubscription.unsubscribe();
+			realtimeChannel.unsubscribe();
 		};
 	});
 </script>
@@ -154,7 +169,7 @@
 		</div>
 
 		{#each filteredTehtavat as tehtava (tehtava.id)}
-			<Tehtavarivi {tehtava} {haeJaJarjestaTehtavat} />
+			<Tehtavarivi {tehtava} />
 		{/each}
 	</div>
 {/if}

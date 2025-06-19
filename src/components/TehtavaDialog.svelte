@@ -5,12 +5,7 @@
 	import PenIcon from '../lib/icons/SquarePenIcon.svelte';
 	import type { Writable } from 'svelte/store';
 
-	let {
-		tehtava,
-		customOpen,
-		haeJaJarjestaTehtavat
-	}: { tehtava: Tehtava; customOpen: Writable<boolean>; haeJaJarjestaTehtavat: () => void } =
-		$props();
+	let { tehtava, customOpen }: { tehtava: Tehtava; customOpen: Writable<boolean> } = $props();
 
 	let updatedValues = $state({
 		nimi: tehtava.nimi,
@@ -68,8 +63,6 @@
 		}
 
 		open.set(false);
-
-		haeJaJarjestaTehtavat();
 	}
 
 	async function poista(id: number, bypassCofirm: boolean = false): Promise<void> {
