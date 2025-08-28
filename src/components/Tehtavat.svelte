@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { haeTehtavat } from '$lib';
 	import { supabase } from '$lib/supabase';
 	import { fade } from 'svelte/transition';
 	import Tehtavarivi from './Tehtavarivi.svelte';
@@ -49,39 +48,23 @@
 
 	async function initialLoad() {
 		loading = true;
-		const tehtavatData = await haeTehtavat();
+		const { data: tehtavatData, error } = await supabase.rpc('get_tehtavat_with_latest_suoritus');
 
-		if (!tehtavatData || tehtavatData.length === 0) {
+		if (error || !tehtavatData || tehtavatData.length === 0) {
+			if (error) console.error('Error fetching data:', error);
 			sortedTehtavat = [];
 			loading = false;
 			updateBadge(0);
 			return;
 		}
 
-		const taskIds = tehtavatData.map((t) => t.id);
-		const { data: latestSuorituksetData } = await supabase
-			.from('suoritukset')
-			.select('tehtava_id, suoritettu')
-			.in('tehtava_id', taskIds)
-			.order('suoritettu', { ascending: false });
-
-		const latestSuoritusMap = new Map<string, string>();
-		if (latestSuorituksetData) {
-			latestSuorituksetData.forEach((s) => {
-				if (!latestSuoritusMap.has(s.tehtava_id)) {
-					latestSuoritusMap.set(s.tehtava_id, s.suoritettu);
-				}
-			});
-		}
-
 		tasksWithLessThanOneDay = 0; // Reset counter for initial load
 		const enrichedTehtavat: EnrichedTehtava[] = tehtavatData.map((tehtava) => {
-			const edellinenSuoritus = latestSuoritusMap.get(tehtava.id) || null;
-			const remainingTime = laskeJaljellaOlevaAika(tehtava, edellinenSuoritus);
+			const remainingTime = laskeJaljellaOlevaAika(tehtava, tehtava.edellinen_suoritus);
 			if (remainingTime < 1) {
 				tasksWithLessThanOneDay++;
 			}
-			return { ...tehtava, remainingTime, edellinenSuoritus };
+			return { ...tehtava, remainingTime, edellinenSuoritus: tehtava.edellinen_suoritus };
 		});
 
 		sortedTehtavat = enrichedTehtavat.sort((a, b) => a.remainingTime - b.remainingTime);
@@ -99,7 +82,6 @@
 	const realtimeChannel = supabase
 		.channel('tehtavat-ja-suoritukset-changes')
 		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tehtavat' }, (payload) => {
-			console.log('New task received via subscription!', payload.new);
 			const uusiTehtavaData = payload.new as Tehtava;
 			const enrichedUusiTehtava: EnrichedTehtava = {
 				...uusiTehtavaData,
@@ -126,7 +108,6 @@
 			}
 		)
 		.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tehtavat' }, (payload) => {
-			console.log('Task delete received via subscription!', payload.old);
 			sortedTehtavat = sortedTehtavat.filter((t) => t.id !== payload.old.id);
 			updateStateAndSort();
 		})
