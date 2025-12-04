@@ -3,22 +3,25 @@
 	import { supabase } from '$lib/supabase';
 	import { fade } from 'svelte/transition';
 
-	let nimi: string = '';
-	let kertasuoritus: boolean = false;
-	let suoritusvali: number = 0;
+	let nimi = $state('');
+	let kertasuoritus = $state(false);
+	let suoritusvali = $state(0);
+	let error = $state<string | null>(null);
 
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
+		error = null;
 		const formData = {
 			nimi,
 			kertasuoritus,
 			suoritusvali
 		};
 
-		const { error } = await supabase.from('tehtavat').insert(formData);
+		const { error: err } = await supabase.from('tehtavat').insert(formData);
 
-		if (error) {
-			console.error('Virhe tehtävän lisäämisessä:', error);
+		if (err) {
+			console.error('Virhe tehtävän lisäämisessä:', err);
+			error = 'Virhe tehtävän lisäämisessä. Yritä uudelleen.';
 		} else {
 			nimi = '';
 			kertasuoritus = false;
@@ -30,6 +33,12 @@
 
 <div class="flex justify-center" in:fade>
 	<form onsubmit={handleSubmit} class="w-full gap-4">
+		{#if error}
+			<div class="mb-4 rounded-lg bg-red-100 p-4 text-red-700">
+				{error}
+			</div>
+		{/if}
+
 		<div class="flex flex-col justify-center gap-4 rounded-lg bg-slate-200 p-4">
 			<label for="nimi" class="text-lg text-slate-900">Tehtävän nimi:</label>
 

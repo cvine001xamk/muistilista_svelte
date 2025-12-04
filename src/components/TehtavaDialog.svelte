@@ -141,28 +141,29 @@
 						</form>
 					</div>
 				{:else}
-					<h2 use:melt={$title} class="text-xl">{tehtava.nimi}</h2>
-					<button
-						onclick={suorita}
-						class="inline-flex h-8 items-center justify-center rounded-sm p-5 text-lg text-zinc-800
-                    	{confirmSuorita ? 'bg-lime-400' : 'bg-lime-600 text-zinc-50'} px-4"
-					>
-						{!confirmSuorita ? 'Suorita' : 'Vahvista suoritus?'}
-					</button>
-					<button
-						onclick={() => poista(tehtava.id)}
-						class="inline-flex h-8 items-center justify-center rounded-sm p-5 text-lg text-zinc-800
-						{!confirmPoista ? 'bg-red-400' : 'bg-red-600 text-zinc-50'} px-4"
-					>
-						{!confirmPoista ? 'Poista' : 'Vahvista poisto?'}
-					</button>
-					<button
-						use:melt={$close}
-						class="inline-flex h-8 items-center justify-center rounded-sm bg-zinc-300 p-5
-				px-4 text-lg text-zinc-800"
-					>
-						Sulje
-					</button>
+					<h2 use:melt={$title} class="mb-2 text-2xl font-bold text-gray-800">{tehtava.nimi}</h2>
+					<div class="flex flex-col gap-3">
+						<button
+							onclick={suorita}
+							class="flex min-h-[52px] items-center justify-center rounded-xl px-6 py-3 text-base font-semibold shadow-md transition-all active:scale-[0.98]
+							{confirmSuorita ? 'bg-gradient-to-r from-lime-500 to-lime-600 text-white' : 'bg-gradient-to-r from-lime-400 to-lime-500 text-gray-800'}"
+						>
+							{!confirmSuorita ? 'Suorita' : 'Vahvista suoritus?'}
+						</button>
+						<button
+							onclick={() => poista(tehtava.id)}
+							class="flex min-h-[52px] items-center justify-center rounded-xl px-6 py-3 text-base font-semibold shadow-md transition-all active:scale-[0.98]
+							{!confirmPoista ? 'bg-gradient-to-r from-red-400 to-red-500 text-gray-800' : 'bg-gradient-to-r from-red-600 to-red-700 text-white'}"
+						>
+							{!confirmPoista ? 'Poista' : 'Vahvista poisto?'}
+						</button>
+						<button
+							use:melt={$close}
+							class="flex min-h-[52px] items-center justify-center rounded-xl bg-gray-200 px-6 py-3 text-base font-semibold text-gray-800 shadow-md transition-all hover:bg-gray-300 active:scale-[0.98]"
+						>
+							Sulje
+						</button>
+					</div>
 				{/if}
 			</div>
 		</div>

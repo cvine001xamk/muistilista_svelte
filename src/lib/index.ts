@@ -20,3 +20,13 @@ export async function haeSuoritukset() {
 
 	return data;
 }
+
+export function laskeJaljellaOlevaAika(tehtava: Tehtava, edellinenSuoritus: string | null): number {
+	const now = new Date();
+	const referenceDate = edellinenSuoritus ? new Date(edellinenSuoritus) : new Date(tehtava.created_at);
+
+	const diffInMs = now.getTime() - referenceDate.getTime();
+	const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+	return tehtava.suoritusvali - diffInDays;
+}

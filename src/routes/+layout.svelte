@@ -11,7 +11,8 @@
 	<div class="fixed top-0 z-50 w-full">
 		<Navigaatio />
 	</div>
-	<div class="mt-16 w-full max-w-md p-4 md:max-w-3xl">
+	<!-- Desktop: top padding for fixed nav, Mobile: top padding + bottom padding for bottom nav -->
+	<div class="mb-20 mt-16 w-full max-w-md p-4 md:mb-0 md:max-w-3xl">
 		{@render children()}
 	</div>
 </div>

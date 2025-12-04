@@ -20,13 +20,13 @@
 	// --- State for Displayed Month ---
 	const today = new Date();
 	const currentRealMonthIndex = today.getMonth(); // 0-11 (January is 0)
-	let displayedMonthIndex = currentRealMonthIndex; // State variable for the currently viewed month index
+	let displayedMonthIndex = $state(currentRealMonthIndex); // State variable for the currently viewed month index
 
 	// --- Reactive Calculations ---
 	// Calculate the displayed month number (1-12) based on the index (0-11).
-	$: displayedMonthNumber = displayedMonthIndex + 1;
+	let displayedMonthNumber = $derived(displayedMonthIndex + 1);
 	// Get the raw produce data for the displayed month, defaulting to an empty object if not found.
-	$: rawProduce = seasonalProduceData[displayedMonthNumber] || {};
+	let rawProduce = $derived(seasonalProduceData[displayedMonthNumber] || {});
 
 	// --- Utility Functions ---
 
@@ -59,13 +59,13 @@
 
 	// --- Reactive Processed Data ---
 	// Creates a processed object where each category's items are sorted alphabetically.
-	$: currentProduce = {
+	let currentProduce = $derived({
 		fruits_and_berries: sortFinnishAlphabetically(rawProduce.fruits_and_berries),
 		vegetables: sortFinnishAlphabetically(rawProduce.vegetables),
 		root_vegetables: sortFinnishAlphabetically(rawProduce.root_vegetables),
 		mushrooms: sortFinnishAlphabetically(rawProduce.mushrooms),
 		wild_plants: sortFinnishAlphabetically(rawProduce.wild_plants)
-	};
+	});
 
 	// --- Month Names (Finnish) ---
 	const finnishMonthNames = [
@@ -83,7 +83,7 @@
 		'Joulukuu'
 	];
 	// Gets the Finnish name for the currently displayed month.
-	$: displayedFinnishMonthName = finnishMonthNames[displayedMonthIndex] || 'Tuntematon'; // Default fallback
+	let displayedFinnishMonthName = $derived(finnishMonthNames[displayedMonthIndex] || 'Tuntematon'); // Default fallback
 
 	// --- Navigation Functions ---
 

@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { haeSuoritukset } from '$lib';
 	import { fade, fly } from 'svelte/transition';
-
 	import { supabase } from '$lib/supabase';
 	import type { RealtimeChannel } from '@supabase/supabase-js';
+	import type { PageData } from './$types';
 
-	let suoritukset = $state<Suoritus[]>([]);
-	let isLoading: boolean = $state(true);
+	let { data }: { data: PageData } = $props();
+
+	let suoritukset = $state<Suoritus[]>(data.suoritukset);
+	let isLoading = $state(false); // Initial load is done by server/load function
 	let error = $state<string | null>(null);
 	let selectedTehtava = $state<string | null>(null);
 
@@ -21,61 +22,48 @@
 	);
 
 	$effect(() => {
-		isLoading = true;
-		error = null;
 		let realtimeChannel: RealtimeChannel;
 
-		haeSuoritukset()
-			.then((data) => {
-				suoritukset = data;
-				isLoading = false;
+		realtimeChannel = supabase
+			.channel('suoritukset-changes')
+			.on(
+				'postgres_changes',
+				{
+					event: '*', // Listen to INSERT, UPDATE, DELETE
+					schema: 'public',
+					table: 'suoritukset'
+				},
+				(payload) => {
+					console.log('Real-time change received!', payload);
 
-				realtimeChannel = supabase
-					.channel('suoritukset-changes')
-					.on(
-						'postgres_changes',
-						{
-							event: '*', // Listen to INSERT, UPDATE, DELETE
-							schema: 'public',
-							table: 'suoritukset'
-						},
-						(payload) => {
-							console.log('Real-time change received!', payload);
-
-							switch (payload.eventType) {
-								case 'INSERT':
-									// Add the new item to our state
-									const newItem = payload.new as Suoritus;
-									suoritukset = [...suoritukset, newItem];
-									break;
-								case 'UPDATE':
-									// Find and update the item in our state
-									const updatedItem = payload.new as Suoritus;
-									suoritukset = suoritukset.map((s) => (s.id === updatedItem.id ? updatedItem : s));
-									break;
-								case 'DELETE':
-									// Find and remove the item from our state
-									const oldId = payload.old.id;
-									suoritukset = suoritukset.filter((s) => s.id !== oldId);
-									break;
-							}
-						}
-					)
-					.subscribe((status, err) => {
-						// Handle subscription errors, e.g., token expired
-						if (err) {
-							console.error('Real-time subscription error:', err);
-							error = 'Yhteys tietokantaan katkesi.';
-						}
-					});
-			})
-			.catch((fetchError) => {
-				console.error('Failed to fetch data:', fetchError);
-				error = 'Tietojen lataus epäonnistui.';
-				isLoading = false;
+					switch (payload.eventType) {
+						case 'INSERT':
+							// Add the new item to our state
+							const newItem = payload.new as Suoritus;
+							suoritukset = [...suoritukset, newItem];
+							break;
+						case 'UPDATE':
+							// Find and update the item in our state
+							const updatedItem = payload.new as Suoritus;
+							suoritukset = suoritukset.map((s) => (s.id === updatedItem.id ? updatedItem : s));
+							break;
+						case 'DELETE':
+							// Find and remove the item from our state
+							const oldId = payload.old.id;
+							suoritukset = suoritukset.filter((s) => s.id !== oldId);
+							break;
+					}
+				}
+			)
+			.subscribe((status, err) => {
+				// Handle subscription errors, e.g., token expired
+				if (err) {
+					console.error('Real-time subscription error:', err);
+					error = 'Yhteys tietokantaan katkesi.';
+				}
 			});
 
-		// 3. Cleanup function: This runs when the component is unmounted
+		// Cleanup function: This runs when the component is unmounted
 		return () => {
 			if (realtimeChannel) {
 				supabase.removeChannel(realtimeChannel);

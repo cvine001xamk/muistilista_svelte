@@ -4,87 +4,87 @@
 	import { flip } from 'svelte/animate';
 	import DeleteIcon from '$lib/icons/DeleteIcon.svelte';
 	import SquarePenIcon from '$lib/icons/SquarePenIcon.svelte';
+	import type { PageData } from './$types';
 
-	type ShoppingItem = {
-		id: string;
-		nimi: string;
-		hinta: number;
-		completed: boolean;
-	};
+	let { data }: { data: PageData } = $props();
 
-	let items = $state<ShoppingItem[]>([]);
+	let items = $state<Ostos[]>(data.items);
 	let newItemName = $state('');
 	let newItemPrice = $state<number | null>(null);
 	let editingItemId = $state<string | null>(null);
+	let isLoading = $state(false);
+	let error = $state<string | null>(null);
 
 	const totalPrice = $derived(
 		items.filter((item) => !item.completed).reduce((sum, item) => sum + item.hinta, 0)
 	);
 
-	async function fetchItems() {
-		const { data, error } = await supabase
-			.from('ostokset')
-			.select('*')
-			.order('created_at', { ascending: false });
-		if (error) console.error('Error fetching items:', error);
-		else items = data;
-	}
-
-	async function addItem() {
+	async function addItem(e: SubmitEvent) {
+		e.preventDefault();
 		if (newItemName && newItemPrice !== null) {
-			const { data, error } = await supabase
+			isLoading = true;
+			error = null;
+			const { data, error: err } = await supabase
 				.from('ostokset')
 				.insert([{ nimi: newItemName, hinta: newItemPrice, completed: false }])
 				.select();
-			if (error) console.error('Error adding item:', error);
-			else {
+			
+			if (err) {
+				console.error('Error adding item:', err);
+				error = 'Virhe tuotteen lisäämisessä.';
+			} else {
 				items = [data[0], ...items];
 				newItemName = '';
 				newItemPrice = null;
 			}
+			isLoading = false;
 		}
 	}
 
 	async function removeItem(id: string) {
 		if (confirm('Haluatko varmasti poistaa tämän tuotteen?')) {
-			const { error } = await supabase.from('ostokset').delete().eq('id', id);
-			if (error) console.error('Error removing item:', error);
-			else items = items.filter((item) => item.id !== id);
+			const { error: err } = await supabase.from('ostokset').delete().eq('id', id);
+			if (err) {
+				console.error('Error removing item:', err);
+				error = 'Virhe tuotteen poistamisessa.';
+			} else {
+				items = items.filter((item) => item.id !== id);
+			}
 		}
 	}
 
-	async function toggleCompleted(item: ShoppingItem) {
-		const { data, error } = await supabase
+	async function toggleCompleted(item: Ostos) {
+		const { data, error: err } = await supabase
 			.from('ostokset')
 			.update({ completed: !item.completed })
 			.eq('id', item.id)
 			.select();
-		if (error) console.error('Error updating item:', error);
-		else {
+		if (err) {
+			console.error('Error updating item:', err);
+			error = 'Virhe tuotteen päivityksessä.';
+		} else {
 			items = items.map((i) => (i.id === item.id ? data[0] : i));
 		}
 	}
 
-	async function updateItem(item: ShoppingItem) {
-		const { data, error } = await supabase
+	async function updateItem(item: Ostos) {
+		const { data, error: err } = await supabase
 			.from('ostokset')
 			.update({ nimi: item.nimi, hinta: item.hinta })
 			.eq('id', item.id)
 			.select();
-		if (error) console.error('Error updating item:', error);
-		else {
+		if (err) {
+			console.error('Error updating item:', err);
+			error = 'Virhe tuotteen päivityksessä.';
+		} else {
 			items = items.map((i) => (i.id === item.id ? data[0] : i));
 			editingItemId = null;
 		}
 	}
 
-	function startEditing(item: ShoppingItem) {
+	function startEditing(item: Ostos) {
 		editingItemId = item.id;
 	}
-
-	$effect(() => {
-		fetchItems();
-	});
 </script>
 
 <div class="mx-auto max-w-2xl p-4 sm:p-6">
@@ -93,14 +93,21 @@
 		<p class="text-slate-500">Lisää, muokkaa ja poista tuotteita listaltasi.</p>
 	</header>
 
+	{#if error}
+		<div class="mb-6 rounded-lg bg-red-100 p-4 text-red-700">
+			{error}
+		</div>
+	{/if}
+
 	<div class="mb-6 rounded-lg bg-white p-4 shadow-md">
-		<form on:submit|preventDefault={addItem} class="flex flex-col gap-4 sm:flex-row">
+		<form onsubmit={addItem} class="flex flex-col gap-4 sm:flex-row">
 			<input
 				type="text"
 				bind:value={newItemName}
 				placeholder="Tuotteen nimi"
 				class="flex-grow rounded-lg border border-gray-300 px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				required
+				disabled={isLoading}
 			/>
 			<input
 				type="number"
@@ -109,12 +116,14 @@
 				placeholder="Hinta (€)"
 				class="w-full rounded-lg border border-gray-300 px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-32"
 				required
+				disabled={isLoading}
 			/>
 			<button
 				type="submit"
-				class="rounded-lg bg-blue-600 px-6 py-2 text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+				class="rounded-lg bg-blue-600 px-6 py-2 text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+				disabled={isLoading}
 			>
-				Lisää
+				{isLoading ? 'Lisätään...' : 'Lisää'}
 			</button>
 		</form>
 	</div>
@@ -135,12 +144,15 @@
 					<input
 						type="checkbox"
 						checked={item.completed}
-						on:change={() => toggleCompleted(item)}
+						onchange={() => toggleCompleted(item)}
 						class="h-6 w-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 					/>
 
 					{#if editingItemId === item.id}
-						<form on:submit|preventDefault={() => updateItem(item)} class="flex flex-grow items-center gap-2">
+						<form
+							onsubmit={(e) => { e.preventDefault(); updateItem(item); }}
+							class="flex flex-grow items-center gap-2"
+						>
 							<input
 								type="text"
 								bind:value={item.nimi}
@@ -153,18 +165,32 @@
 								class="w-24 rounded-md border-gray-300 px-2 py-1 text-slate-800"
 							/>
 							<button type="submit" class="text-green-500 hover:text-green-700">Tallenna</button>
-							<button type="button" on:click={() => (editingItemId = null)} class="text-gray-500 hover:text-gray-700">Peruuta</button>
+							<button
+								type="button"
+								onclick={() => (editingItemId = null)}
+								class="text-gray-500 hover:text-gray-700">Peruuta</button
+							>
 						</form>
 					{:else}
 						<div class="flex-grow">
-							<span class:line-through={item.completed} class="text-lg text-slate-800">{item.nimi}</span>
-							<p class:line-through={item.completed} class="text-sm text-slate-500">{item.hinta.toFixed(2)} €</p>
+							<span class:line-through={item.completed} class="text-lg text-slate-800"
+								>{item.nimi}</span
+							>
+							<p class:line-through={item.completed} class="text-sm text-slate-500">
+								{item.hinta.toFixed(2)} €
+							</p>
 						</div>
 						<div class="flex items-center gap-2">
-							<button on:click={() => startEditing(item)} class="text-slate-500 hover:text-blue-600">
+							<button
+								onclick={() => startEditing(item)}
+								class="text-slate-500 hover:text-blue-600"
+							>
 								<SquarePenIcon class="h-5 w-5" />
 							</button>
-							<button on:click={() => removeItem(item.id)} class="text-slate-500 hover:text-red-600">
+							<button
+								onclick={() => removeItem(item.id)}
+								class="text-slate-500 hover:text-red-600"
+							>
 								<DeleteIcon class="h-5 w-5" />
 							</button>
 						</div>

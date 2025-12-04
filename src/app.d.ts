@@ -24,6 +24,19 @@ declare global {
 		suorittaja?: string | null;
 		tehtava_nimi: string;
 	}
+
+	interface Ostos {
+		id: string;
+		nimi: string;
+		hinta: number;
+		completed: boolean;
+		created_at?: string;
+	}
+
+	type EnrichedTehtava = Tehtava & {
+		remainingTime: number;
+		edellinenSuoritus: string | null;
+	};
 }
 
 export {};

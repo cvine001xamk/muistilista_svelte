@@ -26,15 +26,15 @@
 
 	$effect(() => {
 		if (tehtava.remainingTime <= 2) {
-			bgColor = 'bg-red-500';
+			bgColor = 'bg-gradient-to-br from-red-500 to-red-600';
 		} else if (tehtava.remainingTime <= 3) {
-			bgColor = 'bg-yellow-600';
+			bgColor = 'bg-gradient-to-br from-orange-500 to-orange-600';
 		} else if (tehtava.remainingTime <= 5) {
-			bgColor = 'bg-yellow-500';
+			bgColor = 'bg-gradient-to-br from-yellow-500 to-yellow-600';
 		} else if (tehtava.remainingTime <= 14) {
-			bgColor = 'bg-green-500';
+			bgColor = 'bg-gradient-to-br from-green-500 to-green-600';
 		} else {
-			bgColor = 'bg-green-600';
+			bgColor = 'bg-gradient-to-br from-emerald-500 to-emerald-600';
 		}
 
 		if (tehtava.remainingTime > 0) {
@@ -54,25 +54,71 @@
 
 <button
 	use:melt={$trigger}
-	class="mb-2 w-full rounded-md {bgColor} 'bg-green-600' bg-opacity-85 p-2 drop-shadow-md"
+	class="task-card mb-3 w-full rounded-2xl {bgColor} p-4 shadow-lg transition-all active:scale-[0.98]"
 >
-	<div class="flex flex-col">
-		<div class="flex flex-row justify-between">
-			<p class="overflow-x-hidden text-base">{tehtava.nimi}</p>
+	<div class="flex flex-col gap-2">
+		<div class="flex flex-row items-start justify-between">
+			<p class="overflow-x-hidden text-left text-lg font-semibold text-white">
+				{tehtava.nimi}
+			</p>
 			{#if tehtava.kertasuoritus}
-				<p><OneIcon /></p>
+				<div class="flex-shrink-0 rounded-full bg-white/20 p-1.5 backdrop-blur-sm">
+					<OneIcon />
+				</div>
 			{/if}
 		</div>
-		<div class="flex justify-start text-sm">
-			Edellinen suoritus: {edellinenSuoritusText}
-		</div>
-		<div class="flex flex-row justify-between text-sm">
-			<p>Aikaa jäljellä: {aikaJaljellaText}</p>
-			<span class="me-2 rounded bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-				{tehtava.suoritusvali}
-			</span>
+
+		<div class="flex flex-col gap-1 text-sm text-white/90">
+			<div class="flex items-center justify-between">
+				<span class="opacity-80">Edellinen:</span>
+				<span class="font-medium">{edellinenSuoritusText}</span>
+			</div>
+
+			<div class="flex items-center justify-between">
+				<span class="opacity-80">Aikaa jäljellä:</span>
+				<div class="flex items-center gap-2">
+					<span class="font-medium">{aikaJaljellaText}</span>
+					<span
+						class="rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-gray-800 shadow-sm"
+					>
+						{tehtava.suoritusvali}d
+					</span>
+				</div>
+			</div>
 		</div>
 	</div>
 </button>
 
 <TehtavaDialog {customOpen} {tehtava} />
+
+<style>
+	.task-card {
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		min-height: 72px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.task-card::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+		pointer-events: none;
+	}
+
+	.task-card:active {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	}
+
+	@media (hover: hover) {
+		.task-card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+		}
+	}
+</style>
