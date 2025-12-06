@@ -4,15 +4,29 @@
 	import type { RealtimeChannel } from '@supabase/supabase-js';
 	import type { PageData } from './$types';
 
+	import SuoritusDialog from '../../components/SuoritusDialog.svelte';
+	import { writable } from 'svelte/store';
+
 	let { data }: { data: PageData } = $props();
 
 	let suoritukset = $state<Suoritus[]>(data.suoritukset);
 	let isLoading = $state(false); // Initial load is done by server/load function
 	let error = $state<string | null>(null);
 	let selectedTehtava = $state<string | null>(null);
+	
+	// Dialog state
+	const dialogOpen = writable(false);
+	let selectedSuoritus = $state<Suoritus | null>(null);
+
+	function openEditDialog(suoritus: Suoritus) {
+		selectedSuoritus = suoritus;
+		dialogOpen.set(true);
+	}
 
 	const sortedSuoritukset = $derived(
-		[...suoritukset].sort((a, b) => new Date(b.id).getTime() - new Date(a.id).getTime())
+		[...suoritukset].sort(
+			(a, b) => new Date(b.suoritettu).getTime() - new Date(a.suoritettu).getTime()
+		)
 	);
 
 	const filteredSuoritukset = $derived(
@@ -115,7 +129,10 @@
 						>
 							{suoritus.tehtava_nimi}
 						</td>
-						<td class="border-r border-slate-600/50 px-3 py-1.5 align-top">
+						<td 
+							class="cursor-pointer border-r border-slate-600/50 px-3 py-1.5 align-top transition-colors hover:bg-slate-700/40"
+							onclick={() => openEditDialog(suoritus)}
+						>
 							{new Date(suoritus.suoritettu).toLocaleDateString('fi-FI')}
 						</td>
 						<td
@@ -138,6 +155,8 @@
 		</table>
 	</div>
 {/if}
+
+<SuoritusDialog customOpen={dialogOpen} suoritus={selectedSuoritus} />
 
 <style>
 	table {

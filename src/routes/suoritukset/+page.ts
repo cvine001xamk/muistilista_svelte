@@ -5,7 +5,7 @@ export const load: PageLoad = async () => {
 	const { data, error } = await supabase
 		.from('suoritukset')
 		.select('*')
-		.order('id', { ascending: false });
+		.order('suoritettu', { ascending: false });
 
 	if (error) {
 		console.error('Error fetching suoritukset:', error);
