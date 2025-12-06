@@ -33,14 +33,13 @@
 			<SheetIcon />
 			<span class="hidden lg:inline">Suoritukset</span>
 		</a>
-		<a
-			href="/ostoslista"
-			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30"
-			aria-label="Ostoslista"
+		<div
+			class="btn btn-primary flex cursor-not-allowed items-center gap-2 rounded-lg bg-white/20 px-4 py-2 opacity-50 backdrop-blur-sm transition-all"
+			aria-label="Ostoslista (Ei käytössä)"
 		>
 			<ShoppingIcon />
 			<span class="hidden lg:inline">Ostoslista</span>
-		</a>
+		</div>
 		<a
 			href="/sesongissa"
 			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30"
@@ -102,16 +101,15 @@
 		>
 		<PlusIcon />
 	</a>
-	<a
-		href="/ostoslista"
-		class="nav-item {currentPath === '/ostoslista' ? 'active' : ''}"
-		aria-label="Ostoslista"
+	<div
+		class="nav-item cursor-not-allowed opacity-50"
+		aria-label="Ostoslista (Ei käytössä)"
 	>
 		<div class="nav-icon">
 			<ShoppingIcon />
 		</div>
 		<span class="nav-label">Ostokset</span>
-	</a>
+	</div>
 
 
 		<a
