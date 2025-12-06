@@ -1,8 +1,13 @@
 <script lang="ts">
 	import '../app.css';
 	import Navigaatio from '../components/Navigaatio.svelte';
+	import { globalState } from '$lib/state.svelte';
 
 	let { children } = $props();
+
+	$effect(() => {
+		globalState.init();
+	});
 </script>
 
 <div

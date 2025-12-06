@@ -5,6 +5,8 @@
 	import FruitIcon from '$lib/icons/FruitIcon.svelte';
 	import { page } from '$app/stores';
 
+	import { globalState } from '$lib/state.svelte';
+
 	// Get current route for active state
 	$: currentPath = $page.url.pathname;
 </script>
@@ -69,8 +71,15 @@
 			class="nav-item {currentPath === '/' ? 'active' : ''}"
 			aria-label="Tehtävät"
 		>
-			<div class="nav-icon">
+			<div class="nav-icon relative">
 				<SheetIcon />
+				{#if globalState.tasksWithLessThanOneDay > 0}
+					<span
+						class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm"
+					>
+						{globalState.tasksWithLessThanOneDay}
+					</span>
+				{/if}
 			</div>
 			<span class="nav-label">Tehtävät</span>
 		</a>
