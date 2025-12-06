@@ -54,9 +54,9 @@
 
 <button
 	use:melt={$trigger}
-	class="task-card mb-3 w-full rounded-2xl {bgColor} p-4 shadow-lg transition-all active:scale-[0.98]"
+	class="task-card mb-2 w-full rounded-2xl {bgColor} p-3 shadow-lg transition-all active:scale-[0.98]"
 >
-	<div class="flex flex-col gap-2">
+	<div class="flex flex-col gap-1">
 		<div class="flex flex-row items-start justify-between">
 			<p class="overflow-x-hidden text-left text-lg font-semibold text-white">
 				{tehtava.nimi}
@@ -69,21 +69,21 @@
 		</div>
 
 		<div class="flex flex-col gap-1 text-sm text-white/90">
-			<div class="flex items-center justify-between">
+			<div class="flex items-center justify-start gap-2">
 				<span class="opacity-80">Edellinen:</span>
 				<span class="font-medium">{edellinenSuoritusText}</span>
 			</div>
 
 			<div class="flex items-center justify-between">
-				<span class="opacity-80">Aikaa jäljellä:</span>
 				<div class="flex items-center gap-2">
+					<span class="opacity-80">Aikaa jäljellä:</span>
 					<span class="font-medium">{aikaJaljellaText}</span>
-					<span
-						class="rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-gray-800 shadow-sm"
-					>
-						{tehtava.suoritusvali}d
-					</span>
 				</div>
+				<span
+					class="rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-gray-800 shadow-sm"
+				>
+					{tehtava.suoritusvali}pv
+				</span>
 			</div>
 		</div>
 	</div>
@@ -95,7 +95,7 @@
 	.task-card {
 		backdrop-filter: blur(10px);
 		-webkit-backdrop-filter: blur(10px);
-		min-height: 72px;
+		min-height: 60px;
 		position: relative;
 		overflow: hidden;
 	}

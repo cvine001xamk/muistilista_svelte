@@ -50,6 +50,15 @@
 	</div>
 </div>
 
+<!-- Mobile Top Bar (Logo) -->
+<div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600 to-pink-600 p-3 shadow-lg md:hidden">
+	<div class="flex flex-row items-center justify-center">
+		<a href="/">
+			<h1 class="neon text-2xl">muistilista</h1>
+		</a>
+	</div>
+</div>
+
 <!-- Mobile Navigation (Bottom) -->
 <nav
 	class="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-gradient-to-r from-purple-600 to-pink-600 pb-safe backdrop-blur-lg md:hidden"
