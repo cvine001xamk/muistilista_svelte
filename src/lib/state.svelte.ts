@@ -6,9 +6,14 @@ class GlobalState {
 	tehtavat = $state<EnrichedTehtava[]>([]);
 	tasksWithLessThanOneDay = $state(0);
 	initialized = $state(false);
+	notificationPermission = $state<NotificationPermission>('default');
 	private realtimeChannel: RealtimeChannel | null = null;
 
-	constructor() {}
+	constructor() {
+		if (typeof window !== 'undefined' && 'Notification' in window) {
+			this.notificationPermission = Notification.permission;
+		}
+	}
 
 	async fetchTasks() {
 		const { data: tehtavatData, error } = await supabase.rpc('get_tehtavat_with_latest_suoritus');
@@ -34,12 +39,49 @@ class GlobalState {
 		this.initialized = true;
 	}
 
+	async requestNotificationPermission() {
+		if (!('Notification' in window)) return;
+		const permission = await Notification.requestPermission();
+		this.notificationPermission = permission;
+		if (permission === 'granted') {
+			this.updateBadge(this.tasksWithLessThanOneDay);
+		}
+	}
+
 	private updateBadge(count: number) {
-		if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator) {
-			if (count > 0) {
-				navigator.setAppBadge(count).catch((err) => console.error('Failed to set app badge:', err));
-			} else {
-				navigator.clearAppBadge().catch((err) => console.error('Failed to clear app badge:', err));
+		if (typeof navigator !== 'undefined') {
+			// 1. App Badge (Desktop/some Mobile)
+			if ('setAppBadge' in navigator) {
+				if (count > 0) {
+					navigator.setAppBadge(count).catch((err) => console.error('Failed to set app badge:', err));
+				} else {
+					navigator.clearAppBadge().catch((err) => console.error('Failed to clear app badge:', err));
+				}
+			}
+
+			// 2. Local Notification (Android "Dot" support)
+			if ('Notification' in window && Notification.permission === 'granted') {
+				if (count > 0) {
+					// Check if we already have a notification to avoid spamming? 
+					// For now, simple implementation:
+					// We can use a tag to replace existing notifications
+					navigator.serviceWorker.ready.then((registration) => {
+						registration.showNotification('Muistilista', {
+							body: `${count} tehtävää vaatii huomiota!`,
+							icon: '/notification-icon.png', // Ensure this exists or use logo
+							badge: '/badge-icon.png', // Small icon for status bar
+							tag: 'expired-tasks', // Replaces old notification with same tag
+							renotify: true // Vibrate/sound again if changed
+						} as any);
+					});
+				} else {
+					// Clear notification if count is 0
+					navigator.serviceWorker.ready.then((registration) => {
+						registration.getNotifications({ tag: 'expired-tasks' }).then((notifications) => {
+							notifications.forEach((n) => n.close());
+						});
+					});
+				}
 			}
 		}
 	}

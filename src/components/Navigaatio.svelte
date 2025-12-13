@@ -3,6 +3,7 @@
 	import SheetIcon from '../lib/icons/SheetIcon.svelte';
 	import ShoppingIcon from '$lib/icons/ShoppingIcon.svelte';
 	import FruitIcon from '$lib/icons/FruitIcon.svelte';
+	import BellIcon from '$lib/icons/BellIcon.svelte';
 	import { page } from '$app/stores';
 
 	import { globalState } from '$lib/state.svelte';
@@ -48,15 +49,39 @@
 			<FruitIcon />
 			<span class="hidden lg:inline">Sesongissa</span>
 		</a>
+		
+		{#if globalState.notificationPermission === 'default'}
+			<button
+				onclick={() => globalState.requestNotificationPermission()}
+				class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 animate-pulse"
+				aria-label="Salli ilmoitukset"
+			>
+				<BellIcon />
+				<span class="hidden lg:inline">Salli ilmoitukset</span>
+			</button>
+		{/if}
 	</div>
 </div>
 
 <!-- Mobile Top Bar (Logo) -->
 <div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600 to-pink-600 p-3 shadow-lg md:hidden">
-	<div class="flex flex-row items-center justify-center">
+	<div class="flex flex-row items-center justify-between px-4">
+		<div class="w-8">
+			<!-- Spacer to center logo -->
+			{#if globalState.notificationPermission === 'default'}
+				<button
+					onclick={() => globalState.requestNotificationPermission()}
+					class="text-white animate-pulse"
+					aria-label="Salli ilmoitukset"
+				>
+					<BellIcon />
+				</button>
+			{/if}
+		</div>
 		<a href="/">
 			<h1 class="neon text-2xl">muistilista</h1>
 		</a>
+		<div class="w-8"></div>
 	</div>
 </div>
 
