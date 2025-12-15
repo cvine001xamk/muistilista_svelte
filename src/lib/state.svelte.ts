@@ -60,6 +60,7 @@ class GlobalState {
 			}
 
 			// 2. Local Notification (Android "Dot" support)
+			/* 
 			if ('Notification' in window && Notification.permission === 'granted') {
 				if (count > 0) {
 					// Check if we already have a notification to avoid spamming? 
@@ -83,6 +84,7 @@ class GlobalState {
 					});
 				}
 			}
+			*/
 		}
 	}
 

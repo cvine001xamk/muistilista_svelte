@@ -20,34 +20,34 @@
 
 	let { tehtava }: { tehtava: EnrichedTehtava } = $props();
 
-	let bgColor: string = $state('bg-green-600');
-	let aikaJaljellaText: string = $state('');
-	let edellinenSuoritusText: string = $state('');
-
-	$effect(() => {
+	let bgColor: string = $derived.by(() => {
 		if (tehtava.remainingTime <= 2) {
-			bgColor = 'bg-gradient-to-br from-red-500 to-red-600';
+			return 'bg-gradient-to-br from-red-500 to-red-600';
 		} else if (tehtava.remainingTime <= 3) {
-			bgColor = 'bg-gradient-to-br from-orange-500 to-orange-600';
+			return 'bg-gradient-to-br from-orange-500 to-orange-600';
 		} else if (tehtava.remainingTime <= 5) {
-			bgColor = 'bg-gradient-to-br from-yellow-500 to-yellow-600';
+			return 'bg-gradient-to-br from-yellow-500 to-yellow-600';
 		} else if (tehtava.remainingTime <= 14) {
-			bgColor = 'bg-gradient-to-br from-green-500 to-green-600';
+			return 'bg-gradient-to-br from-green-500 to-green-600';
 		} else {
-			bgColor = 'bg-gradient-to-br from-emerald-500 to-emerald-600';
+			return 'bg-gradient-to-br from-emerald-500 to-emerald-600';
 		}
+	});
 
+	let aikaJaljellaText: string = $derived.by(() => {
 		if (tehtava.remainingTime > 0) {
 			const futureDate = new Date(Date.now() + tehtava.remainingTime * 24 * 60 * 60 * 1000);
-			aikaJaljellaText = formatDistanceToNow(futureDate, { locale: fi });
+			return formatDistanceToNow(futureDate, { locale: fi });
 		} else {
-			aikaJaljellaText = 'Suoritusaika on umpeutunut';
+			return 'Suoritusaika on umpeutunut';
 		}
+	});
 
+	let edellinenSuoritusText: string = $derived.by(() => {
 		if (tehtava.edellinenSuoritus) {
-			edellinenSuoritusText = new Date(tehtava.edellinenSuoritus).toLocaleDateString('fi-FI');
+			return new Date(tehtava.edellinenSuoritus).toLocaleDateString('fi-FI');
 		} else {
-			edellinenSuoritusText = 'Ei suorituksia';
+			return 'Ei suorituksia';
 		}
 	});
 </script>
