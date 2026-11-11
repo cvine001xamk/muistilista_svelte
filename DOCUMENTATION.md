@@ -45,7 +45,7 @@
 | **Real-time** | Supabase Realtime (WebSockets) | — |
 | **Date Formatting** | date-fns | 4.x |
 | **Icons** | Custom SVG components + Lucide | — |
-| **Deployment** | Vercel (Node.js 20.x) | — |
+| **Deployment** | Vercel (Node.js 26.x) | — |
 | **Language** | TypeScript | 5.x |
 | **Fonts** | Gabarito (body), Pacifico (headings) | Custom |
 
@@ -104,7 +104,7 @@ A custom service worker implements a **network-first strategy with cache fallbac
 
 - **Client-side data loading** (`+page.ts`) — data is fetched on the client via the Supabase JS client
 - **SSR layout** — the root layout initializes `GlobalState` and renders the navigation shell
-- Deployed on **Vercel** with the `@sveltejs/adapter-vercel` (Node.js 20.x runtime)
+- Deployed on **Vercel** with the `@sveltejs/adapter-vercel` (Node.js 26.x runtime)
 
 ---
 
@@ -294,7 +294,7 @@ muistilista_svelte/
 ├── tailwind.config.ts
 ├── vite.config.ts
 ├── tsconfig.json
-├── vercel.json                    # Vercel build config (Node 20)
+├── vercel.json                    # Vercel build config (Node 26)
 └── .env                           # Supabase URL, Anon Key, Gemini API Key
 ```
 
