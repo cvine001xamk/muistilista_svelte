@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
-	import { supabase } from '$lib/supabase';
-	import type { RealtimeChannel } from '@supabase/supabase-js';
+	import { completionsState } from '$lib/completions.svelte';
 	import type { PageData } from './$types';
 
 	import SuoritusDialog from '../../components/SuoritusDialog.svelte';
@@ -9,11 +8,13 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let suoritukset = $state<Suoritus[]>(data.suoritukset);
-	let isLoading = $state(false); // Initial load is done by server/load function
-	let error = $state<string | null>(null);
+	// Initialize completionsState
+	$effect(() => {
+		completionsState.init();
+	});
+
 	let selectedTehtava = $state<string | null>(null);
-	
+
 	// Dialog state
 	const dialogOpen = writable(false);
 	let selectedSuoritus = $state<Suoritus | null>(null);
@@ -23,8 +24,15 @@
 		dialogOpen.set(true);
 	}
 
+	// Use completionsState.suoritukset if populated, otherwise data.suoritukset from SSR
+	const activeSuoritukset = $derived(
+		completionsState.suoritukset.length > 0 || completionsState.initialized
+			? completionsState.suoritukset
+			: (data.suoritukset ?? [])
+	);
+
 	const sortedSuoritukset = $derived(
-		[...suoritukset].sort(
+		[...activeSuoritukset].sort(
 			(a, b) => new Date(b.suoritettu).getTime() - new Date(a.suoritettu).getTime()
 		)
 	);
@@ -35,73 +43,21 @@
 			: sortedSuoritukset
 	);
 
-	$effect(() => {
-		let realtimeChannel: RealtimeChannel;
-
-		realtimeChannel = supabase
-			.channel('suoritukset-changes')
-			.on(
-				'postgres_changes',
-				{
-					event: '*', // Listen to INSERT, UPDATE, DELETE
-					schema: 'public',
-					table: 'suoritukset'
-				},
-				(payload) => {
-					console.log('Real-time change received!', payload);
-
-					switch (payload.eventType) {
-						case 'INSERT':
-							// Add the new item to our state
-							const newItem = payload.new as Suoritus;
-							suoritukset = [...suoritukset, newItem];
-							break;
-						case 'UPDATE':
-							// Find and update the item in our state
-							const updatedItem = payload.new as Suoritus;
-							suoritukset = suoritukset.map((s) => (s.id === updatedItem.id ? updatedItem : s));
-							break;
-						case 'DELETE':
-							// Find and remove the item from our state
-							const oldId = payload.old.id;
-							suoritukset = suoritukset.filter((s) => s.id !== oldId);
-							break;
-					}
-				}
-			)
-			.subscribe((status, err) => {
-				// Handle subscription errors, e.g., token expired
-				if (err) {
-					console.error('Real-time subscription error:', err);
-					error = 'Yhteys tietokantaan katkesi.';
-				}
-			});
-
-		// Cleanup function: This runs when the component is unmounted
-		return () => {
-			if (realtimeChannel) {
-				supabase.removeChannel(realtimeChannel);
-			}
-		};
-	});
-
 	function toggleFilter(tehtava: string) {
 		selectedTehtava = selectedTehtava === tehtava ? null : tehtava;
 	}
 </script>
 
-{#if isLoading}
+{#if completionsState.isLoading && activeSuoritukset.length === 0}
 	<div class="p-4 text-center text-slate-400" transition:fade>Ladataan...</div>
-{:else if error}
-	<!-- Added: Display error messages to the user -->
+{:else if completionsState.error && activeSuoritukset.length === 0}
 	<div class="rounded-md bg-red-900/50 p-4 text-center text-red-200" transition:fade>
 		<strong>Virhe:</strong>
-		{error}
+		{completionsState.error}
 	</div>
-{:else if suoritukset.length === 0}
+{:else if activeSuoritukset.length === 0}
 	<div class="p-4 text-center text-slate-400" transition:fade>Ei suorituksia löydetty.</div>
 {:else}
-	<!-- Your existing table structure is great. No changes needed here. -->
 	<div
 		class="max-w-full overflow-x-auto rounded-md bg-slate-800 p-1 shadow"
 		in:fade={{ duration: 300 }}
@@ -129,7 +85,7 @@
 						>
 							{suoritus.tehtava_nimi}
 						</td>
-						<td 
+						<td
 							class="cursor-pointer border-r border-slate-600/50 px-3 py-1.5 align-top transition-colors hover:bg-slate-700/40"
 							onclick={() => openEditDialog(suoritus)}
 						>
@@ -139,7 +95,7 @@
 							class="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 align-top"
 							title={suoritus.suorittaja}
 						>
-							{suoritus.suorittaja}
+							{suoritus.suorittaja ?? 'Tuntematon'}
 						</td>
 					</tr>
 				{:else}

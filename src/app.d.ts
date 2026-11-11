@@ -15,6 +15,8 @@ declare global {
 		suoritusvali: number;
 		kertasuoritus: boolean;
 		created_at: string;
+		/** Stored in IDB alongside the task for offline enrichment */
+		edellinen_suoritus?: string | null;
 	}
 
 	interface Suoritus {

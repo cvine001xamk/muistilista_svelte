@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { supabase } from '$lib/supabase';
+	import { completionsState } from '$lib/completions.svelte';
 	import { createDialog, melt } from '@melt-ui/svelte';
 	import { fade } from 'svelte/transition';
 	import type { Writable } from 'svelte/store';
@@ -11,14 +11,13 @@
 
 	let updatedDate = $state('');
 	let confirmPoista = $state(false);
-	let resetPoistaTimeout: any;
+	let resetPoistaTimeout: ReturnType<typeof setTimeout>;
+	let isBusy = $state(false);
 
 	// Initialize date when dialog opens or suoritus changes
 	$effect(() => {
 		if (suoritus) {
-			// Format date for datetime-local input (YYYY-MM-DDTHH:mm)
 			const date = new Date(suoritus.suoritettu);
-			// Adjust to local ISO string for input
 			const offset = date.getTimezoneOffset() * 60000;
 			updatedDate = new Date(date.getTime() - offset).toISOString().slice(0, 10);
 		}
@@ -32,23 +31,17 @@
 	});
 
 	async function handleSave() {
-		if (!suoritus || !updatedDate) return;
+		if (!suoritus || !updatedDate || isBusy) return;
+		isBusy = true;
 
-		const { error } = await supabase
-			.from('suoritukset')
-			.update({ suoritettu: new Date(updatedDate).toISOString() })
-			.eq('id', suoritus.id);
+		await completionsState.updateSuoritus(suoritus, new Date(updatedDate).toISOString());
 
-		if (error) {
-			console.error('Error updating suoritus:', error);
-			return;
-		}
-
+		isBusy = false;
 		open.set(false);
 	}
 
 	async function handlePoista() {
-		if (!suoritus) return;
+		if (!suoritus || isBusy) return;
 
 		if (!confirmPoista) {
 			confirmPoista = true;
@@ -56,14 +49,11 @@
 			return;
 		}
 		clearTimeout(resetPoistaTimeout);
+		isBusy = true;
 
-		const { error } = await supabase.from('suoritukset').delete().eq('id', suoritus.id);
+		await completionsState.deleteSuoritus(suoritus.id);
 
-		if (error) {
-			console.error('Error deleting suoritus:', error);
-			return;
-		}
-
+		isBusy = false;
 		open.set(false);
 		confirmPoista = false;
 	}
@@ -97,14 +87,16 @@
 					<div class="mt-4 flex flex-col gap-3">
 						<button
 							onclick={handleSave}
-							class="flex min-h-[44px] items-center justify-center rounded-xl bg-sky-600 px-6 py-2 text-base font-semibold text-white shadow-md transition-all hover:bg-sky-500 active:scale-[0.98]"
+							disabled={isBusy}
+							class="flex min-h-[44px] items-center justify-center rounded-xl bg-sky-600 px-6 py-2 text-base font-semibold text-white shadow-md transition-all hover:bg-sky-500 active:scale-[0.98] disabled:opacity-60"
 						>
-							Tallenna
+							{isBusy ? 'Tallennetaan…' : 'Tallenna'}
 						</button>
 
 						<button
 							onclick={handlePoista}
-							class="flex min-h-[44px] items-center justify-center rounded-xl px-6 py-2 text-base font-semibold shadow-md transition-all active:scale-[0.98]
+							disabled={isBusy}
+							class="flex min-h-[44px] items-center justify-center rounded-xl px-6 py-2 text-base font-semibold shadow-md transition-all active:scale-[0.98] disabled:opacity-60
 							{!confirmPoista
 								? 'bg-red-100 text-red-700 hover:bg-red-200'
 								: 'bg-red-600 text-white hover:bg-red-700'}"

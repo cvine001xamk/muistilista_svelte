@@ -25,7 +25,21 @@ sw.addEventListener('activate', (event) => {
 			.then((keys) =>
 				Promise.all(keys.map((key) => (key !== CACHE ? caches.delete(key) : undefined)))
 			)
+			.then(() => sw.clients.claim())
 	);
+});
+
+// Background Sync API: Defer network requests until connectivity is restored
+sw.addEventListener('sync', (event: any) => {
+	if (event.tag === 'sync-mutations') {
+		event.waitUntil(
+			sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+				for (const client of clients) {
+					client.postMessage({ type: 'BACKGROUND_SYNC_TRIGGER' });
+				}
+			})
+		);
+	}
 });
 
 sw.addEventListener('fetch', (event) => {

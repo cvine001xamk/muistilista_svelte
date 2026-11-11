@@ -1,7 +1,11 @@
 <script lang="ts">
 	import '../app.css';
 	import Navigaatio from '../components/Navigaatio.svelte';
+	import ConnectivityBanner from '../components/ConnectivityBanner.svelte';
+	import ToastContainer from '../components/ToastContainer.svelte';
 	import { globalState } from '$lib/state.svelte';
+	// Import connectivity singleton so it registers online/offline listeners
+	import '$lib/connectivity.svelte';
 
 	let { children } = $props();
 
@@ -20,6 +24,8 @@
 	<div class="mb-20 mt-16 w-full max-w-md p-4 md:mb-0 md:max-w-3xl">
 		{@render children()}
 	</div>
+	<ConnectivityBanner />
+	<ToastContainer />
 </div>
 
 <style>

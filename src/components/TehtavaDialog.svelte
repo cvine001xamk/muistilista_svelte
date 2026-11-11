@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { supabase } from '$lib/supabase';
+	import { globalState } from '$lib/state.svelte';
+	import { toastState } from '$lib/toast.svelte';
 	import { createDialog, melt } from '@melt-ui/svelte';
 	import { fade } from 'svelte/transition';
 	import PenIcon from '../lib/icons/SquarePenIcon.svelte';
@@ -14,10 +15,9 @@
 	});
 
 	let editing: boolean = $state(false);
-	let confirmSuorita: boolean = $state(false);
 	let confirmPoista: boolean = $state(false);
-	let resetSuoritaTimeout: any;
-	let resetPoistaTimeout: any;
+	let resetPoistaTimeout: ReturnType<typeof setTimeout>;
+	let isBusy = $state(false);
 
 	const {
 		elements: { portalled, overlay, content, title, description, close },
@@ -28,59 +28,67 @@
 
 	async function handleSubmit(e: SubmitEvent): Promise<void> {
 		e.preventDefault();
-		const { error } = await supabase.from('tehtavat').update(updatedValues).eq('id', tehtava.id);
+		if (isBusy) return;
+		if (!updatedValues.nimi.trim() || updatedValues.suoritusvali < 1) return;
+		isBusy = true;
 
-		if (error) {
-			console.error('Error updating tehtava:', error);
-			return;
+		const { error } = await globalState.updateTehtava(tehtava.id, updatedValues);
+
+		isBusy = false;
+		if (!error) {
+			open.set(false);
 		}
-
-		open.set(false);
 	}
 
 	async function suorita(): Promise<void> {
-		if (!confirmSuorita) {
-			confirmSuorita = true;
-			resetSuoritaTimeout = setTimeout(() => (confirmSuorita = false), 3000);
-			return;
-		}
+		if (isBusy) return;
+		isBusy = true;
 
-		clearTimeout(resetSuoritaTimeout);
+		const result = await globalState.suoritaTehtava(tehtava);
 
-		const { error } = await supabase.from('suoritukset').insert({
-			tehtava_id: tehtava.id,
-			suoritettu: new Date().toISOString(),
-			suorittaja: 'Tuntematon',
-			tehtava_nimi: tehtava.nimi
-		});
-
-		if (error) {
-			return;
-		}
-
-		if (tehtava.kertasuoritus) {
-			poista(tehtava.id, true);
-		}
-
+		isBusy = false;
 		open.set(false);
+
+		// Show Undo Toast
+		toastState.show(`"${tehtava.nimi}" merkitty suoritetuksi`, {
+			actionLabel: 'Kumoa',
+			onAction: async () => {
+				if (result.suoritusId != null) {
+					await globalState.undoSuorita(
+						tehtava,
+						result.suoritusId,
+						result.previousEdellinenSuoritus ?? null
+					);
+				}
+			}
+		});
 	}
 
-	async function poista(id: number, bypassCofirm: boolean = false): Promise<void> {
-		if (!confirmPoista && !bypassCofirm) {
+	async function poista(id: number): Promise<void> {
+		if (!confirmPoista) {
 			confirmPoista = true;
 			resetPoistaTimeout = setTimeout(() => (confirmPoista = false), 3000);
 			return;
 		}
 		clearTimeout(resetPoistaTimeout);
+		if (isBusy) return;
+		isBusy = true;
 
-		const { error } = await supabase.from('tehtavat').delete().eq('id', id);
+		const result = await globalState.deleteTehtava(id);
 
-		if (error) {
-			console.error('Error deleting tehtava:', error);
-			return;
-		}
-
+		isBusy = false;
 		open.set(false);
+
+		// Show Undo Toast
+		if (result.deletedTask) {
+			const deletedTask = result.deletedTask;
+			toastState.show(`"${deletedTask.nimi}" poistettu`, {
+				actionLabel: 'Kumoa',
+				onAction: async () => {
+					await globalState.undoDelete(deletedTask);
+				}
+			});
+		}
 	}
 </script>
 
@@ -91,8 +99,8 @@
 				use:melt={$content}
 				in:fade
 				class="fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-[90vw] max-w-[450px] -translate-x-1/2 -translate-y-1/2
-					flex-col gap-4 rounded-xl bg-white
-					p-6 shadow-lg"
+				flex-col gap-4 rounded-xl bg-white
+				p-6 shadow-lg"
 			>
 				<button
 					aria-label="Muokkaa tehtävää"
@@ -118,6 +126,7 @@
 							<input
 								id="suoritusvali"
 								type="number"
+								min="1"
 								class="w-full rounded-md border p-2"
 								bind:value={updatedValues.suoritusvali}
 							/>
@@ -134,9 +143,10 @@
 							</span>
 							<button
 								type="submit"
-								class="btn mt-4 w-full rounded-sm border-slate-400 bg-sky-600 p-2 text-white hover:bg-sky-400"
+								disabled={isBusy}
+								class="btn mt-4 w-full rounded-sm border-slate-400 bg-sky-600 p-2 text-white hover:bg-sky-400 disabled:opacity-60"
 							>
-								Tallenna
+								{isBusy ? 'Tallennetaan…' : 'Tallenna'}
 							</button>
 						</form>
 					</div>
@@ -145,14 +155,15 @@
 					<div class="flex flex-col gap-3">
 						<button
 							onclick={suorita}
-							class="flex min-h-[52px] items-center justify-center rounded-xl px-6 py-3 text-base font-semibold shadow-md transition-all active:scale-[0.98]
-							{confirmSuorita ? 'bg-gradient-to-r from-lime-500 to-lime-600 text-white' : 'bg-gradient-to-r from-lime-400 to-lime-500 text-gray-800'}"
+							disabled={isBusy}
+							class="flex min-h-[52px] items-center justify-center rounded-xl bg-gradient-to-r from-lime-500 to-lime-600 px-6 py-3 text-base font-semibold text-white shadow-md transition-all active:scale-[0.98] hover:opacity-95 disabled:opacity-60"
 						>
-							{!confirmSuorita ? 'Suorita' : 'Vahvista suoritus?'}
+							{isBusy ? 'Merkitään…' : 'Suorita tehtävä'}
 						</button>
 						<button
 							onclick={() => poista(tehtava.id)}
-							class="flex min-h-[52px] items-center justify-center rounded-xl px-6 py-3 text-base font-semibold shadow-md transition-all active:scale-[0.98]
+							disabled={isBusy}
+							class="flex min-h-[52px] items-center justify-center rounded-xl px-6 py-3 text-base font-semibold shadow-md transition-all active:scale-[0.98] disabled:opacity-60
 							{!confirmPoista ? 'bg-gradient-to-r from-red-400 to-red-500 text-gray-800' : 'bg-gradient-to-r from-red-600 to-red-700 text-white'}"
 						>
 							{!confirmPoista ? 'Poista' : 'Vahvista poisto?'}

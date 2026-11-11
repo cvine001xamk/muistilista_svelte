@@ -1,31 +1,40 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { supabase } from '$lib/supabase';
+	import { globalState } from '$lib/state.svelte';
 	import { fade } from 'svelte/transition';
 
 	let nimi = $state('');
 	let kertasuoritus = $state(false);
-	let suoritusvali = $state(0);
+	let suoritusvali = $state(1);
 	let error = $state<string | null>(null);
+	let isBusy = $state(false);
 
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
+		if (isBusy) return;
 		error = null;
-		const formData = {
-			nimi,
-			kertasuoritus,
-			suoritusvali
-		};
 
-		const { error: err } = await supabase.from('tehtavat').insert(formData);
+		if (!nimi.trim()) {
+			error = 'Tehtävän nimi on pakollinen.';
+			return;
+		}
 
+		if (suoritusvali < 1) {
+			error = 'Suoritusvälin on oltava vähintään 1 päivä.';
+			return;
+		}
+
+		isBusy = true;
+
+		const { error: err } = await globalState.addTehtava({ nimi, kertasuoritus, suoritusvali });
+
+		isBusy = false;
 		if (err) {
-			console.error('Virhe tehtävän lisäämisessä:', err);
 			error = 'Virhe tehtävän lisäämisessä. Yritä uudelleen.';
 		} else {
 			nimi = '';
 			kertasuoritus = false;
-			suoritusvali = 0;
+			suoritusvali = 1;
 			goto('/');
 		}
 	}
@@ -66,15 +75,17 @@
 				id="suoritusvali"
 				bind:value={suoritusvali}
 				type="number"
+				min="1"
 				class="border-2 border-zinc-700 p-2 text-slate-900"
 				required
 			/>
 
 			<button
 				type="submit"
-				class="btn mt-4 w-full rounded-sm border-slate-400 bg-sky-600 p-2 text-white hover:bg-sky-400"
-				>Lisää
-			</button>
+				disabled={isBusy}
+				class="btn mt-4 w-full rounded-sm border-slate-400 bg-sky-600 p-2 text-white hover:bg-sky-400 disabled:opacity-60"
+				>{isBusy ? 'Lisätään…' : 'Lisää'}</button
+			>
 		</div>
 	</form>
 </div>

@@ -8,8 +8,8 @@
 
 	import { globalState } from '$lib/state.svelte';
 
-	// Get current route for active state
-	$: currentPath = $page.url.pathname;
+	// Svelte 5 rune for reactive current path
+	const currentPath = $derived($page.url.pathname);
 </script>
 
 <!-- Desktop Navigation (Top) -->
@@ -20,7 +20,7 @@
 		</a>
 		<a
 			href="/lisaa"
-			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30"
+			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/lisaa' ? 'ring-2 ring-white/50' : ''}"
 			aria-label="Lisää tehtävä"
 		>
 			<PlusIcon />
@@ -28,22 +28,23 @@
 		</a>
 		<a
 			href="/suoritukset"
-			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30"
+			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/suoritukset' ? 'ring-2 ring-white/50' : ''}"
 			aria-label="Suoritukset"
 		>
 			<SheetIcon />
 			<span class="hidden lg:inline">Suoritukset</span>
 		</a>
-		<div
-			class="btn btn-primary flex cursor-not-allowed items-center gap-2 rounded-lg bg-white/20 px-4 py-2 opacity-50 backdrop-blur-sm transition-all"
-			aria-label="Ostoslista (Ei käytössä)"
+		<a
+			href="/ostoslista"
+			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/ostoslista' ? 'ring-2 ring-white/50' : ''}"
+			aria-label="Ostoslista"
 		>
 			<ShoppingIcon />
 			<span class="hidden lg:inline">Ostoslista</span>
-		</div>
+		</a>
 		<a
 			href="/sesongissa"
-			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30"
+			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/sesongissa' ? 'ring-2 ring-white/50' : ''}"
 			aria-label="Sesonkikalenteri"
 		>
 			<FruitIcon />
@@ -120,22 +121,23 @@
 		</a>
 		
 		<a
-		href="/lisaa"
-		class="fab-button"
-		aria-label="Lisää tehtävä"
+			href="/lisaa"
+			class="fab-button"
+			aria-label="Lisää tehtävä"
 		>
-		<PlusIcon />
-	</a>
-	<div
-		class="nav-item cursor-not-allowed opacity-50"
-		aria-label="Ostoslista (Ei käytössä)"
-	>
-		<div class="nav-icon">
-			<ShoppingIcon />
-		</div>
-		<span class="nav-label">Ostokset</span>
-	</div>
+			<PlusIcon />
+		</a>
 
+		<a
+			href="/ostoslista"
+			class="nav-item {currentPath === '/ostoslista' ? 'active' : ''}"
+			aria-label="Ostoslista"
+		>
+			<div class="nav-icon">
+				<ShoppingIcon />
+			</div>
+			<span class="nav-label">Ostokset</span>
+		</a>
 
 		<a
 			href="/sesongissa"
