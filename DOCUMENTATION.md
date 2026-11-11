@@ -370,7 +370,7 @@ muistilista_svelte/
 
 | Feature | Description | Priority |
 |---|---|---|
-| **Swipe-to-complete** | Swipe right on a task card to instantly mark it as done (with undo) | 🔴 High impact |
+| **Swipe-to-complete** | Swipe right on a task card to instantly mark it as done (with undo) | 🔴 High impact (✅ Valmis) |
 | **Pull-to-refresh** | Native-feeling pull-to-refresh gesture on mobile | 🟡 Important |
 | **Task categories / tags** | Group tasks by room, type, or custom tags (e.g., "Kitchen", "Bathroom", "Garden") | 🟡 Important |
 | **Scheduled reminders** | Set specific time-of-day reminders for tasks that are due, via push notification | 🔴 High impact |
@@ -379,7 +379,7 @@ muistilista_svelte/
 | **Drag-to-reorder** | Allow manual reordering of tasks (pin important ones) | 🟢 Nice to have |
 | **Onboarding flow** | First-launch tutorial explaining the app concept for new users | 🟡 Important |
 | **Undo / snackbar** | Show a toast with "Undo" action after completing or deleting a task | 🔴 High impact (✅ Valmis) |
-| **Animated transitions** | Page transitions and list animations (e.g., task sliding out on completion) | 🟢 Nice to have |
+| **Animated transitions** | Page transitions and list animations (e.g., task flip/glide on completion) | 🟢 Nice to have (✅ Valmis) |
 | **Multi-language support (i18n)** | Add English language support alongside Finnish | 🟢 Nice to have |
 | **Accessibility audit** | ARIA labels, keyboard navigation, screen reader support, focus management | 🟡 Important |
 | **Enable shopping list** | Finish and enable the `/ostoslista` route in navigation | 🟡 Important (✅ Valmis) |

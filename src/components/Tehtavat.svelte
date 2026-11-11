@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
 	import Tehtavarivi from './Tehtavarivi.svelte';
 	import TaskSkeleton from './TaskSkeleton.svelte';
 	import DeleteIcon from '$lib/icons/DeleteIcon.svelte';
@@ -90,7 +91,9 @@
 	{:else}
 		<div class="w-full max-w-md">
 			{#each filteredTehtavat as tehtava (tehtava.id)}
-				<Tehtavarivi {tehtava} />
+				<div animate:flip={{ duration: 250 }}>
+					<Tehtavarivi {tehtava} />
+				</div>
 			{/each}
 		</div>
 	{/if}
