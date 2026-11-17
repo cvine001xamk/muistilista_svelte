@@ -48,8 +48,13 @@ class OstoslistaState {
 				this.items = cached.sort((a, b) => {
 					const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
 					const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-					return dateB - dateA;
+					if (dateA !== dateB) return dateB - dateA;
+					const idA = typeof a.id === 'number' ? a.id : parseInt(String(a.id).replace('temp_', ''), 10) || 0;
+					const idB = typeof b.id === 'number' ? b.id : parseInt(String(b.id).replace('temp_', ''), 10) || 0;
+					return idB - idA;
 				});
+			} else {
+				this.items = [];
 			}
 		} catch (err) {
 			console.error('[OstoslistaState] Error loading from IDB:', err);
@@ -59,6 +64,7 @@ class OstoslistaState {
 	async fetchAndSyncFromSupabase() {
 		this.isLoading = true;
 		try {
+			// Supabase ostokset schema: id (int), nimi (text), completed (boolean), created_at (timestamptz)
 			const { data, error } = await supabase
 				.from('ostokset')
 				.select('*')
@@ -76,17 +82,27 @@ class OstoslistaState {
 
 			await db.transaction('rw', db.ostokset, async () => {
 				for (const serverItem of data) {
-					serverIds.add(serverItem.id);
-					if (pendingIds.has(serverItem.id)) {
+					const strId = String(serverItem.id);
+					serverIds.add(strId);
+					if (pendingIds.has(strId) || pendingIds.has(serverItem.id)) {
 						continue; // Preserve local uncommitted edits
 					}
-					await db.ostokset.put(serverItem);
+					const ostosItem: Ostos = {
+						id: strId,
+						nimi: serverItem.nimi,
+						maara: serverItem.maara ?? null,
+						completed: serverItem.completed ?? false,
+						created_at: serverItem.created_at
+					};
+					await db.ostokset.put(ostosItem);
 				}
 
-				// Clean up deleted items from local store
+				// Clean up deleted items from local store (ignore pending temp items)
 				const currentLocal = await db.ostokset.toArray();
 				for (const localItem of currentLocal) {
-					if (!serverIds.has(localItem.id) && !pendingIds.has(localItem.id)) {
+					const localStrId = String(localItem.id);
+					if (localStrId.startsWith('temp_')) continue;
+					if (!serverIds.has(localStrId) && !pendingIds.has(localItem.id) && !pendingIds.has(localStrId)) {
 						await db.ostokset.delete(localItem.id);
 					}
 				}
@@ -100,13 +116,14 @@ class OstoslistaState {
 		}
 	}
 
-	async addItem(nimi: string, hinta: number = 0): Promise<{ error: unknown }> {
-		const tempId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `temp_${Date.now()}`;
+	async addItem(nimi: string, maara?: string): Promise<{ error: unknown }> {
+		const tempId = `temp_${Date.now()}`;
 		const now = new Date().toISOString();
+		const trimmedMaara = maara?.trim() || null;
 		const newItem: Ostos = {
 			id: tempId,
 			nimi,
-			hinta: 0,
+			maara: trimmedMaara,
 			completed: false,
 			created_at: now
 		};
@@ -117,29 +134,38 @@ class OstoslistaState {
 		// 2. Persist to IDB
 		await db.ostokset.put(newItem);
 
+		const payload = { nimi, maara: trimmedMaara, completed: false };
+
 		if (connectivity.isOnline) {
 			const { data, error } = await supabase
 				.from('ostokset')
-				.insert([{ nimi, hinta: 0, completed: false }])
+				.insert([payload])
 				.select();
 
 			if (error) {
 				console.error('[OstoslistaState] Error adding item, queueing:', error);
-				await enqueueMutation('ostokset', 'INSERT', { nimi, hinta: 0, completed: false }, undefined, tempId);
+				await enqueueMutation('ostokset', 'INSERT', payload, undefined, tempId);
 				await connectivity.refreshPendingCount();
 				return { error: null };
 			}
 
 			if (data && data.length > 0) {
-				const inserted = data[0] as Ostos;
+				const inserted = data[0];
+				const syncedItem: Ostos = {
+					id: String(inserted.id),
+					nimi: inserted.nimi,
+					maara: inserted.maara ?? null,
+					completed: inserted.completed ?? false,
+					created_at: inserted.created_at
+				};
 				await db.ostokset.delete(tempId);
-				await db.ostokset.put(inserted);
-				this.items = this.items.map((i) => (i.id === tempId ? inserted : i));
+				await db.ostokset.put(syncedItem);
+				this.items = this.items.map((i) => (i.id === tempId ? syncedItem : i));
 			}
 
 			return { error: null };
 		} else {
-			await enqueueMutation('ostokset', 'INSERT', { nimi, hinta: 0, completed: false }, undefined, tempId);
+			await enqueueMutation('ostokset', 'INSERT', payload, undefined, tempId);
 			await connectivity.refreshPendingCount();
 			return { error: null };
 		}
@@ -155,8 +181,15 @@ class OstoslistaState {
 		// 2. Persist to IDB and Supabase/queue
 		for (const item of completedItems) {
 			await db.ostokset.delete(item.id);
+			if (String(item.id).startsWith('temp_')) {
+				continue;
+			}
 			if (connectivity.isOnline) {
-				await supabase.from('ostokset').delete().eq('id', item.id);
+				const { error } = await supabase.from('ostokset').delete().eq('id', item.id);
+				if (error) {
+					console.error('[OstoslistaState] Error removing completed item, queueing:', error);
+					await enqueueMutation('ostokset', 'DELETE', undefined, item.id);
+				}
 			} else {
 				await enqueueMutation('ostokset', 'DELETE', undefined, item.id);
 			}
@@ -165,9 +198,10 @@ class OstoslistaState {
 	}
 
 	async toggleCompleted(item: Ostos): Promise<{ error: unknown }> {
+		const newCompleted = !item.completed;
 		const updatedItem: Ostos = {
 			...item,
-			completed: !item.completed
+			completed: newCompleted
 		};
 
 		// 1. Optimistic update
@@ -176,21 +210,28 @@ class OstoslistaState {
 		// 2. Persist to IDB
 		await db.ostokset.put(updatedItem);
 
+		// If this is still a temporary local item, avoid querying server with temp ID
+		if (String(item.id).startsWith('temp_')) {
+			return { error: null };
+		}
+
+		const payload = { completed: newCompleted };
+
 		if (connectivity.isOnline) {
 			const { error } = await supabase
 				.from('ostokset')
-				.update({ completed: updatedItem.completed })
+				.update(payload)
 				.eq('id', item.id);
 
 			if (error) {
 				console.error('[OstoslistaState] Error toggling item, queueing:', error);
-				await enqueueMutation('ostokset', 'UPDATE', { completed: updatedItem.completed }, item.id);
+				await enqueueMutation('ostokset', 'UPDATE', payload, item.id);
 				await connectivity.refreshPendingCount();
 				return { error: null };
 			}
 			return { error: null };
 		} else {
-			await enqueueMutation('ostokset', 'UPDATE', { completed: updatedItem.completed }, item.id);
+			await enqueueMutation('ostokset', 'UPDATE', payload, item.id);
 			await connectivity.refreshPendingCount();
 			return { error: null };
 		}
@@ -203,7 +244,11 @@ class OstoslistaState {
 		// 2. Persist to IDB
 		await db.ostokset.put(item);
 
-		const payload = { nimi: item.nimi, hinta: item.hinta };
+		if (String(item.id).startsWith('temp_')) {
+			return { error: null };
+		}
+
+		const payload = { nimi: item.nimi, maara: item.maara ?? null, completed: item.completed };
 
 		if (connectivity.isOnline) {
 			const { error } = await supabase.from('ostokset').update(payload).eq('id', item.id);
@@ -228,6 +273,10 @@ class OstoslistaState {
 
 		// 2. Remove from IDB
 		await db.ostokset.delete(id);
+
+		if (String(id).startsWith('temp_')) {
+			return { error: null };
+		}
 
 		if (connectivity.isOnline) {
 			const { error } = await supabase.from('ostokset').delete().eq('id', id);
@@ -261,23 +310,39 @@ class OstoslistaState {
 
 					switch (payload.eventType) {
 						case 'INSERT': {
-							const newItem = payload.new as Ostos;
-							if (!this.items.some((i) => i.id === newItem.id)) {
-								this.items = [newItem, ...this.items];
-								await db.ostokset.put(newItem);
+							const newItem = payload.new as any;
+							const strId = String(newItem.id);
+							if (!this.items.some((i) => i.id === strId)) {
+								const ostos: Ostos = {
+									id: strId,
+									nimi: newItem.nimi,
+									maara: newItem.maara ?? null,
+									completed: newItem.completed ?? (newItem.hinta === 1),
+									created_at: newItem.created_at
+								};
+								this.items = [ostos, ...this.items];
+								await db.ostokset.put(ostos);
 							}
 							break;
 						}
 						case 'UPDATE': {
-							const updatedItem = payload.new as Ostos;
-							if (pendingIds.has(updatedItem.id)) return;
-							this.items = this.items.map((i) => (i.id === updatedItem.id ? updatedItem : i));
-							await db.ostokset.put(updatedItem);
+							const updatedItem = payload.new as any;
+							const strId = String(updatedItem.id);
+							if (pendingIds.has(strId) || pendingIds.has(updatedItem.id)) return;
+							const ostos: Ostos = {
+								id: strId,
+								nimi: updatedItem.nimi,
+								maara: updatedItem.maara ?? null,
+								completed: updatedItem.completed ?? (updatedItem.hinta === 1),
+								created_at: updatedItem.created_at
+							};
+							this.items = this.items.map((i) => (i.id === strId ? ostos : i));
+							await db.ostokset.put(ostos);
 							break;
 						}
 						case 'DELETE': {
-							const oldId = payload.old.id;
-							if (pendingIds.has(oldId)) return;
+							const oldId = String(payload.old?.id);
+							if (pendingIds.has(oldId) || pendingIds.has(payload.old?.id)) return;
 							this.items = this.items.filter((i) => i.id !== oldId);
 							await db.ostokset.delete(oldId);
 							break;

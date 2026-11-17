@@ -8,11 +8,17 @@
 		transition:fade={{ duration: 200 }}
 		class="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 md:bottom-4"
 	>
-		<div
-			class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-lg
+		<button
+			type="button"
+			class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-lg select-none
 			{!connectivity.isOnline
-				? 'bg-red-600 text-white'
-				: 'bg-amber-500 text-white'}"
+				? 'bg-red-600 text-white cursor-default'
+				: 'bg-amber-500 text-white cursor-pointer active:scale-95 transition-transform'}"
+			onclick={() => connectivity.retrySync()}
+			disabled={!connectivity.isOnline}
+			aria-label={!connectivity.isOnline
+				? 'Offline — muutokset tallennetaan paikallisesti'
+				: `Synkronoidaan ${connectivity.pendingSync} muutosta. Napauta kokeillaksesi uudelleen.`}
 		>
 			{#if !connectivity.isOnline}
 				<span class="relative flex size-2">
@@ -39,7 +45,7 @@
 				</svg>
 				Synkronoidaan {connectivity.pendingSync} muutosta…
 			{/if}
-		</div>
+		</button>
 	</div>
 {/if}
 

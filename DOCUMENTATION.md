@@ -206,11 +206,11 @@ erDiagram
     }
 
     ostokset {
-        string id PK
+        int id PK
         string nimi
-        float hinta
-        boolean completed
-        timestamp created_at
+        string maara "Optional quantity or note (e.g. 2 kpl, 1 l)"
+        boolean completed "Checked/bought state"
+        timestamp created_at "Creation timestamp"
     }
 
     tehtavat ||--o{ suoritukset : "has many"

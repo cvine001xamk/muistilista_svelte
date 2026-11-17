@@ -115,9 +115,20 @@ async function replayEntry(entry: SyncQueueEntry): Promise<boolean> {
 		let error: unknown = null;
 
 		if (entry.operation === 'INSERT') {
+			let payload = { ...(entry.payload || {}) };
+
+			if (entry.table === 'ostokset') {
+				const hasCompleted = (payload as any).completed !== undefined;
+				payload = {
+					nimi: (payload as any).nimi ?? '',
+					maara: (payload as any).maara ?? null,
+					completed: hasCompleted ? (payload as any).completed : false
+				};
+			}
+
 			const { data, error: insertError } = await supabase
 				.from(entry.table)
-				.insert(entry.payload as any)
+				.insert(payload as any)
 				.select();
 
 			error = insertError;
@@ -132,23 +143,57 @@ async function replayEntry(entry: SyncQueueEntry): Promise<boolean> {
 					await db.suoritukset.delete(entry.tempId as number);
 					await db.suoritukset.put(inserted as Suoritus);
 				} else if (entry.table === 'ostokset') {
-					await db.ostokset.delete(entry.tempId as string);
-					await db.ostokset.put(inserted as Ostos);
+					await db.ostokset.delete(String(entry.tempId));
+					const syncedItem: Ostos = {
+						id: String(inserted.id),
+						nimi: inserted.nimi,
+						maara: inserted.maara ?? null,
+						completed: inserted.completed ?? false,
+						created_at: inserted.created_at
+					};
+					await db.ostokset.put(syncedItem);
 				}
 			}
 		} else if (entry.operation === 'UPDATE') {
+			// Skip invalid temp ID updates
+			if (typeof entry.recordId === 'string' && entry.recordId.startsWith('temp_')) {
+				return true;
+			}
+
+			let payload = { ...(entry.payload || {}) };
+
+			if (entry.table === 'ostokset') {
+				payload = {
+					...((payload as any).nimi !== undefined ? { nimi: (payload as any).nimi } : {}),
+					...((payload as any).maara !== undefined ? { maara: (payload as any).maara } : {}),
+					...((payload as any).completed !== undefined ? { completed: (payload as any).completed } : {})
+				};
+			}
+
 			const result = await supabase
 				.from(entry.table)
-				.update(entry.payload as any)
+				.update(payload as any)
 				.eq('id', entry.recordId as string);
 			error = result.error;
 		} else if (entry.operation === 'DELETE') {
+			// Skip invalid temp ID deletes
+			if (typeof entry.recordId === 'string' && entry.recordId.startsWith('temp_')) {
+				return true;
+			}
+
 			const result = await supabase.from(entry.table).delete().eq('id', entry.recordId as string);
 			error = result.error;
 		}
 
 		if (error) {
 			console.error('[SyncQueue] Replay failed for entry:', entry, error);
+			// If PostgREST reports column missing or bad request, don't keep retrying forever
+			const status = (error as any)?.status;
+			const code = (error as any)?.code;
+			if (status === 400 || code === 'PGRST204' || code === '42703' || code === '22P02') {
+				console.warn('[SyncQueue] Schema or syntax error in entry, discarding unrecoverable mutation:', entry);
+				return true; // Mark as handled so it gets purged from queue
+			}
 			return false;
 		}
 

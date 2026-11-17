@@ -15,8 +15,10 @@
 	});
 
 	let newItemName = $state('');
+	let newItemAmount = $state('');
 	let isSubmitting = $state(false);
 	let filter = $state<'all' | 'active' | 'completed'>('all');
+	let nameInputRef = $state<HTMLInputElement | null>(null);
 
 	const allItems = $derived(
 		ostoslistaState.items.length > 0 || ostoslistaState.initialized
@@ -36,13 +38,18 @@
 
 	async function addItem(e: SubmitEvent) {
 		e.preventDefault();
-		const trimmed = newItemName.trim();
-		if (!trimmed || isSubmitting) return;
+		const trimmedName = newItemName.trim();
+		const trimmedAmount = newItemAmount.trim();
+		if (!trimmedName || isSubmitting) return;
 
 		isSubmitting = true;
-		await ostoslistaState.addItem(trimmed);
+		await ostoslistaState.addItem(trimmedName, trimmedAmount || undefined);
 		newItemName = '';
+		newItemAmount = '';
 		isSubmitting = false;
+
+		// Retain focus in the name input field for fast multi-item entry
+		nameInputRef?.focus();
 	}
 
 	async function removeItem(item: Ostos) {
@@ -52,7 +59,8 @@
 		toastState.show(`"${item.nimi}" poistettu listalta`, {
 			actionLabel: 'Kumoa',
 			onAction: async () => {
-				await ostoslistaState.addItem(item.nimi);
+				await ostoslistaState.addItem(item.nimi, item.maara || undefined);
+				nameInputRef?.focus();
 			}
 		});
 	}
@@ -72,8 +80,9 @@
 			actionLabel: 'Kumoa',
 			onAction: async () => {
 				for (const item of backup) {
-					await ostoslistaState.addItem(item.nimi);
+					await ostoslistaState.addItem(item.nimi, item.maara || undefined);
 				}
+				nameInputRef?.focus();
 			}
 		});
 	}
@@ -105,18 +114,29 @@
 		class="relative flex items-center rounded-2xl bg-white/15 p-1.5 shadow-lg backdrop-blur-md border border-white/20 transition-all focus-within:border-white/40 focus-within:ring-2 focus-within:ring-pink-500/40"
 	>
 		<input
+			bind:this={nameInputRef}
 			type="text"
 			bind:value={newItemName}
 			placeholder="Lisää tuote... (esim. Maito)"
-			class="w-full bg-transparent px-4 py-2.5 text-base text-white placeholder-white/50 focus:outline-none"
+			class="min-w-0 flex-grow bg-transparent px-3 sm:px-4 py-2.5 text-base text-white placeholder-white/50 focus:outline-none"
 			disabled={isSubmitting}
 			required
+		/>
+
+		<div class="h-6 w-px bg-white/20 flex-shrink-0 mx-1"></div>
+
+		<input
+			type="text"
+			bind:value={newItemAmount}
+			placeholder="Määrä (esim. 2 kpl)"
+			class="w-24 sm:w-36 bg-transparent px-2 sm:px-3 py-2.5 text-sm sm:text-base text-white placeholder-white/40 focus:outline-none flex-shrink-0"
+			disabled={isSubmitting}
 		/>
 
 		<button
 			type="submit"
 			disabled={!newItemName.trim() || isSubmitting}
-			class="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+			class="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-3.5 sm:px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
 			aria-label="Lisää tuote"
 		>
 			<PlusIcon class="size-5" />
@@ -230,12 +250,22 @@
 							{/if}
 						</div>
 
-						<span
-							class="text-base font-medium transition-all text-white
-							{item.completed ? 'line-through text-white/50' : 'text-white'}"
-						>
-							{item.nimi}
-						</span>
+						<div class="flex flex-wrap items-center gap-2">
+							<span
+								class="text-base font-medium transition-all text-white
+								{item.completed ? 'line-through text-white/50' : 'text-white'}"
+							>
+								{item.nimi}
+							</span>
+							{#if item.maara}
+								<span
+									class="rounded-lg bg-white/15 px-2 py-0.5 text-xs font-semibold text-white/90 backdrop-blur-sm border border-white/10
+									{item.completed ? 'opacity-50 line-through' : ''}"
+								>
+									{item.maara}
+								</span>
+							{/if}
+						</div>
 					</label>
 
 					<!-- Remove button -->

@@ -30,7 +30,7 @@ declare global {
 	interface Ostos {
 		id: string;
 		nimi: string;
-		hinta: number;
+		maara?: string | null;
 		completed: boolean;
 		created_at?: string;
 	}
