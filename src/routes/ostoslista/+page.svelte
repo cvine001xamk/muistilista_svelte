@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
+	import { fade, fly, slide } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 	import DeleteIcon from '$lib/icons/DeleteIcon.svelte';
-	import SquarePenIcon from '$lib/icons/SquarePenIcon.svelte';
+	import PlusIcon from '$lib/icons/PlusIcon.svelte';
+	import ShoppingIcon from '$lib/icons/ShoppingIcon.svelte';
 	import { ostoslistaState } from '$lib/ostoslista.svelte';
+	import { toastState } from '$lib/toast.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -13,177 +15,240 @@
 	});
 
 	let newItemName = $state('');
-	let newItemPrice = $state<number | null>(null);
-	let editingItemId = $state<string | null>(null);
 	let isSubmitting = $state(false);
+	let filter = $state<'all' | 'active' | 'completed'>('all');
 
-	const activeItems = $derived(
+	const allItems = $derived(
 		ostoslistaState.items.length > 0 || ostoslistaState.initialized
 			? ostoslistaState.items
 			: (data.items ?? [])
 	);
 
-	const totalPrice = $derived(
-		activeItems.filter((item) => !item.completed).reduce((sum, item) => sum + item.hinta, 0)
-	);
+	const uncompletedItems = $derived(allItems.filter((item) => !item.completed));
+	const completedItems = $derived(allItems.filter((item) => item.completed));
+
+	const displayedItems = $derived.by(() => {
+		if (filter === 'active') return uncompletedItems;
+		if (filter === 'completed') return completedItems;
+		// In 'all' view, show uncompleted items first, completed items at the end
+		return [...uncompletedItems, ...completedItems];
+	});
 
 	async function addItem(e: SubmitEvent) {
 		e.preventDefault();
-		if (newItemName.trim() && newItemPrice !== null && !isSubmitting) {
-			isSubmitting = true;
-			await ostoslistaState.addItem(newItemName.trim(), newItemPrice);
-			newItemName = '';
-			newItemPrice = null;
-			isSubmitting = false;
-		}
+		const trimmed = newItemName.trim();
+		if (!trimmed || isSubmitting) return;
+
+		isSubmitting = true;
+		await ostoslistaState.addItem(trimmed);
+		newItemName = '';
+		isSubmitting = false;
 	}
 
-	async function removeItem(id: string) {
-		if (confirm('Haluatko varmasti poistaa tämän tuotteen?')) {
-			await ostoslistaState.removeItem(id);
-		}
+	async function removeItem(item: Ostos) {
+		await ostoslistaState.removeItem(item.id);
+
+		// Non-blocking Undo notification
+		toastState.show(`"${item.nimi}" poistettu listalta`, {
+			actionLabel: 'Kumoa',
+			onAction: async () => {
+				await ostoslistaState.addItem(item.nimi);
+			}
+		});
 	}
 
 	async function toggleCompleted(item: Ostos) {
 		await ostoslistaState.toggleCompleted(item);
 	}
 
-	async function updateItem(item: Ostos) {
-		await ostoslistaState.updateItem(item);
-		editingItemId = null;
-	}
+	async function handleClearCompleted() {
+		const count = completedItems.length;
+		if (count === 0) return;
 
-	function startEditing(item: Ostos) {
-		editingItemId = item.id;
+		const backup = [...completedItems];
+		await ostoslistaState.clearCompleted();
+
+		toastState.show(`${count} ostettua tuotetta poistettu`, {
+			actionLabel: 'Kumoa',
+			onAction: async () => {
+				for (const item of backup) {
+					await ostoslistaState.addItem(item.nimi);
+				}
+			}
+		});
 	}
 </script>
 
-<div class="mx-auto max-w-2xl p-4 sm:p-6">
-	<header class="mb-8">
-		<h1 class="text-4xl font-bold tracking-tight text-slate-800">Ostoslista</h1>
-		<p class="text-slate-500">Lisää, muokkaa ja poista tuotteita listaltasi.</p>
+<div class="mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-xl" in:fade>
+	<!-- Header -->
+	<header class="flex flex-col gap-1">
+		<div class="flex items-center justify-between">
+			<h1 class="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">Ostoslista</h1>
+			{#if allItems.length > 0}
+				<span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-md">
+					{uncompletedItems.length} ostettavaa
+				</span>
+			{/if}
+		</div>
+		<p class="text-sm text-white/70">Yhteinen ostoslista reaaliaikaisella synkronoinnilla.</p>
 	</header>
 
 	{#if ostoslistaState.error}
-		<div class="mb-6 rounded-lg bg-red-100 p-4 text-red-700">
+		<div class="rounded-xl bg-red-500/20 p-3 text-sm text-red-200 backdrop-blur-md border border-red-500/30">
 			{ostoslistaState.error}
 		</div>
 	{/if}
 
-	<div class="mb-6 rounded-lg bg-white p-4 shadow-md">
-		<form onsubmit={addItem} class="flex flex-col gap-4 sm:flex-row">
-			<input
-				type="text"
-				bind:value={newItemName}
-				placeholder="Tuotteen nimi"
-				class="flex-grow rounded-lg border border-gray-300 px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-				required
-				disabled={isSubmitting}
-			/>
-			<input
-				type="number"
-				step="0.01"
-				min="0"
-				bind:value={newItemPrice}
-				placeholder="Hinta (€)"
-				class="w-full rounded-lg border border-gray-300 px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-32"
-				required
-				disabled={isSubmitting}
-			/>
-			<button
-				type="submit"
-				class="rounded-lg bg-blue-600 px-6 py-2 text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-				disabled={isSubmitting}
-			>
-				{isSubmitting ? 'Lisätään...' : 'Lisää'}
-			</button>
-		</form>
-	</div>
+	<!-- Add Item Form -->
+	<form
+		onsubmit={addItem}
+		class="relative flex items-center rounded-2xl bg-white/15 p-1.5 shadow-lg backdrop-blur-md border border-white/20 transition-all focus-within:border-white/40 focus-within:ring-2 focus-within:ring-pink-500/40"
+	>
+		<input
+			type="text"
+			bind:value={newItemName}
+			placeholder="Lisää tuote... (esim. Maito)"
+			class="w-full bg-transparent px-4 py-2.5 text-base text-white placeholder-white/50 focus:outline-none"
+			disabled={isSubmitting}
+			required
+		/>
 
-	{#if activeItems.length === 0}
-		<div class="text-center text-slate-500">
-			<p>Ostoslistasi on tyhjä.</p>
-			<p>Lisää ensimmäinen tuote yllä olevasta lomakkeesta.</p>
+		<button
+			type="submit"
+			disabled={!newItemName.trim() || isSubmitting}
+			class="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+			aria-label="Lisää tuote"
+		>
+			<PlusIcon class="size-5" />
+			<span class="hidden sm:inline">Lisää</span>
+		</button>
+	</form>
+
+	<!-- Filter pills & Clear completed -->
+	{#if allItems.length > 0}
+		<div class="flex items-center justify-between gap-2 text-xs">
+			<div class="flex items-center gap-1.5 rounded-xl bg-white/10 p-1 backdrop-blur-md">
+				<button
+					type="button"
+					onclick={() => (filter = 'all')}
+					class="rounded-lg px-2.5 py-1 font-medium transition-all {filter === 'all'
+						? 'bg-white/25 text-white shadow-sm'
+						: 'text-white/60 hover:text-white'}"
+				>
+					Kaikki ({allItems.length})
+				</button>
+				<button
+					type="button"
+					onclick={() => (filter = 'active')}
+					class="rounded-lg px-2.5 py-1 font-medium transition-all {filter === 'active'
+						? 'bg-white/25 text-white shadow-sm'
+						: 'text-white/60 hover:text-white'}"
+				>
+					Ostamatta ({uncompletedItems.length})
+				</button>
+				{#if completedItems.length > 0}
+					<button
+						type="button"
+						onclick={() => (filter = 'completed')}
+						class="rounded-lg px-2.5 py-1 font-medium transition-all {filter === 'completed'
+							? 'bg-white/25 text-white shadow-sm'
+							: 'text-white/60 hover:text-white'}"
+					>
+						Ostetut ({completedItems.length})
+					</button>
+				{/if}
+			</div>
+
+			{#if completedItems.length > 0}
+				<button
+					type="button"
+					onclick={handleClearCompleted}
+					class="text-white/70 hover:text-rose-300 font-medium transition-colors"
+				>
+					Poista ostetut
+				</button>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Items List -->
+	{#if allItems.length === 0}
+		<!-- Empty State -->
+		<div
+			in:fade
+			class="flex flex-col items-center justify-center rounded-2xl bg-white/10 p-10 text-center backdrop-blur-md border border-white/15 my-4"
+		>
+			<div class="mb-3 rounded-full bg-white/15 p-4 text-white">
+				<ShoppingIcon class="size-8" />
+			</div>
+			<h3 class="text-xl font-bold text-white">Ostoslista on tyhjä</h3>
+			<p class="mt-1 max-w-xs text-sm text-white/70">
+				Kirjoita tuotteen nimi yllä olevaan kenttään lisätäksesi sen yhteiselle listalle.
+			</p>
+		</div>
+	{:else if displayedItems.length === 0}
+		<div
+			in:fade
+			class="flex flex-col items-center justify-center rounded-2xl bg-white/10 p-8 text-center backdrop-blur-md border border-white/15"
+		>
+			<p class="text-sm text-white/70">Ei tuotteita valitulla suodatuksella.</p>
 		</div>
 	{:else}
-		<ul class="space-y-4">
-			{#each activeItems as item (item.id)}
+		<ul class="flex flex-col gap-2">
+			{#each displayedItems as item (item.id)}
 				<li
-					in:fly={{ y: 20, duration: 300 }}
-					animate:flip={{ duration: 500 }}
-					class="flex items-center gap-4 rounded-lg bg-white p-4 shadow-sm transition-all hover:shadow-md"
+					in:fly={{ y: 15, duration: 250 }}
+					out:slide={{ duration: 200 }}
+					animate:flip={{ duration: 250 }}
+					class="group flex items-center justify-between gap-3 rounded-2xl px-4 py-3 shadow-md backdrop-blur-md transition-all border
+					{item.completed
+						? 'bg-white/5 border-white/5 opacity-60'
+						: 'bg-white/15 border-white/15 hover:bg-white/20 hover:border-white/25'}"
 				>
-					<input
-						type="checkbox"
-						checked={item.completed}
-						onchange={() => toggleCompleted(item)}
-						class="size-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-					/>
-
-					{#if editingItemId === item.id}
-						<form
-							onsubmit={(e) => {
-								e.preventDefault();
-								updateItem(item);
-							}}
-							class="flex flex-grow items-center gap-2"
+					<!-- Custom Checkbox & Label -->
+					<label class="flex flex-grow items-center gap-3.5 cursor-pointer select-none">
+						<input
+							type="checkbox"
+							checked={item.completed}
+							onchange={() => toggleCompleted(item)}
+							class="sr-only"
+						/>
+						<div
+							class="flex size-6 flex-shrink-0 items-center justify-center rounded-lg border transition-all
+							{item.completed
+								? 'bg-emerald-500 border-emerald-400 text-white shadow-sm'
+								: 'border-white/40 bg-white/10 group-hover:border-white/60'}"
 						>
-							<input
-								type="text"
-								bind:value={item.nimi}
-								class="flex-grow rounded-md border border-gray-300 px-2 py-1 text-slate-800"
-							/>
-							<input
-								type="number"
-								step="0.01"
-								min="0"
-								bind:value={item.hinta}
-								class="w-24 rounded-md border border-gray-300 px-2 py-1 text-slate-800"
-							/>
-							<button type="submit" class="text-green-500 hover:text-green-700">Tallenna</button>
-							<button
-								type="button"
-								onclick={() => (editingItemId = null)}
-								class="text-gray-500 hover:text-gray-700">Peruuta</button
-							>
-						</form>
-					{:else}
-						<div class="flex-grow">
-							<span class:line-through={item.completed} class="text-lg text-slate-800"
-								>{item.nimi}</span
-							>
-							<p class:line-through={item.completed} class="text-sm text-slate-500">
-								{item.hinta.toFixed(2)} €
-							</p>
+							{#if item.completed}
+								<svg class="size-4" viewBox="0 0 20 20" fill="currentColor">
+									<path
+										fill-rule="evenodd"
+										d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+										clip-rule="evenodd"
+									/>
+								</svg>
+							{/if}
 						</div>
-						<div class="flex items-center gap-2">
-							<button
-								onclick={() => startEditing(item)}
-								class="text-slate-500 hover:text-blue-600"
-								aria-label="Muokkaa tuotetta"
-							>
-								<SquarePenIcon class="size-5" />
-							</button>
-							<button
-								onclick={() => removeItem(item.id)}
-								class="text-slate-500 hover:text-red-600"
-								aria-label="Poista tuote"
-							>
-								<DeleteIcon class="size-5" />
-							</button>
-						</div>
-					{/if}
+
+						<span
+							class="text-base font-medium transition-all text-white
+							{item.completed ? 'line-through text-white/50' : 'text-white'}"
+						>
+							{item.nimi}
+						</span>
+					</label>
+
+					<!-- Remove button -->
+					<button
+						type="button"
+						onclick={() => removeItem(item)}
+						class="flex size-8 items-center justify-center rounded-xl text-white/50 transition-colors hover:bg-rose-500/20 hover:text-rose-300 active:scale-95 flex-shrink-0"
+						aria-label="Poista {item.nimi}"
+					>
+						<DeleteIcon class="size-4" />
+					</button>
 				</li>
 			{/each}
 		</ul>
-	{/if}
-
-	{#if activeItems.length > 0}
-		<div class="mt-8 border-t border-gray-200 pt-6">
-			<div class="flex justify-between text-xl font-bold text-slate-800">
-				<span>Yhteensä (ostamatta):</span>
-				<span>{totalPrice.toFixed(2)} €</span>
-			</div>
-		</div>
 	{/if}
 </div>

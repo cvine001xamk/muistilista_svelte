@@ -100,13 +100,13 @@ class OstoslistaState {
 		}
 	}
 
-	async addItem(nimi: string, hinta: number): Promise<{ error: unknown }> {
+	async addItem(nimi: string, hinta: number = 0): Promise<{ error: unknown }> {
 		const tempId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `temp_${Date.now()}`;
 		const now = new Date().toISOString();
 		const newItem: Ostos = {
 			id: tempId,
 			nimi,
-			hinta,
+			hinta: 0,
 			completed: false,
 			created_at: now
 		};
@@ -120,12 +120,12 @@ class OstoslistaState {
 		if (connectivity.isOnline) {
 			const { data, error } = await supabase
 				.from('ostokset')
-				.insert([{ nimi, hinta, completed: false }])
+				.insert([{ nimi, hinta: 0, completed: false }])
 				.select();
 
 			if (error) {
 				console.error('[OstoslistaState] Error adding item, queueing:', error);
-				await enqueueMutation('ostokset', 'INSERT', { nimi, hinta, completed: false }, undefined, tempId);
+				await enqueueMutation('ostokset', 'INSERT', { nimi, hinta: 0, completed: false }, undefined, tempId);
 				await connectivity.refreshPendingCount();
 				return { error: null };
 			}
@@ -139,10 +139,29 @@ class OstoslistaState {
 
 			return { error: null };
 		} else {
-			await enqueueMutation('ostokset', 'INSERT', { nimi, hinta, completed: false }, undefined, tempId);
+			await enqueueMutation('ostokset', 'INSERT', { nimi, hinta: 0, completed: false }, undefined, tempId);
 			await connectivity.refreshPendingCount();
 			return { error: null };
 		}
+	}
+
+	async clearCompleted(): Promise<void> {
+		const completedItems = this.items.filter((i) => i.completed);
+		if (completedItems.length === 0) return;
+
+		// 1. Optimistic remove
+		this.items = this.items.filter((i) => !i.completed);
+
+		// 2. Persist to IDB and Supabase/queue
+		for (const item of completedItems) {
+			await db.ostokset.delete(item.id);
+			if (connectivity.isOnline) {
+				await supabase.from('ostokset').delete().eq('id', item.id);
+			} else {
+				await enqueueMutation('ostokset', 'DELETE', undefined, item.id);
+			}
+		}
+		await connectivity.refreshPendingCount();
 	}
 
 	async toggleCompleted(item: Ostos): Promise<{ error: unknown }> {

@@ -153,14 +153,12 @@ Features Supabase Realtime subscription for live updates. Includes a dialog for 
 
 ### 4. 🛒 Shopping List (`/ostoslista`)
 
-> ⚠️ **Currently disabled** in the navigation (marked as "Ei käytössä" / not in use)
-
-A shared shopping list with:
-- Add items with name and price
-- Check/uncheck items
-- Inline editing
-- Delete with confirmation
-- Running total of unchecked items
+A modern, offline-first shared shopping list with:
+- Quick add input for item names
+- Check/uncheck items with smooth visual states
+- Single-tap removal with instant "Kumoa" (Undo) toast
+- Filters (All, Unchecked, Checked) and "Poista ostetut" action
+- Real-time synchronization across all household devices via Supabase and local IndexedDB cache
 
 ### 5. 🍎 Seasonal Produce Calendar (`/sesongissa`)
 
