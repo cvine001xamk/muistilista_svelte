@@ -13,8 +13,11 @@ sw.addEventListener('install', (event) => {
 	event.waitUntil(
 		caches
 			.open(CACHE)
-			.then((cache) => cache.addAll(ASSETS))
+			.then((cache) => cache.addAll([...ASSETS, '/']))
 			.then(() => sw.skipWaiting())
+			.catch((err) => {
+				console.warn('[SW] Install precache partial warning:', err);
+			})
 	);
 });
 
@@ -43,29 +46,42 @@ sw.addEventListener('sync', (event: any) => {
 });
 
 sw.addEventListener('fetch', (event) => {
-	// ignore POST requests etc
+	// ignore non-GET requests
 	if (event.request.method !== 'GET') return;
 
 	async function respond() {
 		const url = new URL(event.request.url);
 		const cache = await caches.open(CACHE);
 
-		// `build`/`files` can always be served from the cache
+		// 1. `build`/`files` can always be served from the cache (cache-first)
 		if (ASSETS.includes(url.pathname)) {
 			const response = await cache.match(url.pathname);
-
 			if (response) {
 				return response;
 			}
 		}
 
-		// for everything else, try the network first, but
-		// fall back to the cache if we're offline
+		// 2. Navigation requests: serve cached app shell immediately (stale-while-revalidate),
+		// eliminating cellular network delays and white screen on mobile startup.
+		if (event.request.mode === 'navigate') {
+			const cachedPage = (await cache.match(event.request)) || (await cache.match('/'));
+			if (cachedPage) {
+				// Revalidate in background without blocking render
+				fetch(event.request)
+					.then((res) => {
+						if (res.status === 200) {
+							cache.put(event.request, res.clone());
+						}
+					})
+					.catch(() => {});
+				return cachedPage;
+			}
+		}
+
+		// 3. For other dynamic requests, try network first with fallback to cache
 		try {
 			const response = await fetch(event.request);
 
-			// if we're offline, fetch can return a value that is not a Response
-			// instead of throwing - and we can't pass this to event.respondWith
 			if (!(response instanceof Response)) {
 				throw new Error('invalid response from fetch');
 			}
@@ -77,13 +93,10 @@ sw.addEventListener('fetch', (event) => {
 			return response;
 		} catch (err) {
 			const response = await cache.match(event.request);
-
 			if (response) {
 				return response;
 			}
 
-			// if there's no cache, then just error out
-			// as there is nothing we can do to respond to this request
 			throw err;
 		}
 	}

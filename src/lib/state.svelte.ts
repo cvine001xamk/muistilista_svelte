@@ -46,16 +46,16 @@ class GlobalState {
 		if (this.initialized) return;
 		this.initialized = true;
 
-		// 1. Load cached tasks from IndexedDB immediately
+		// 1. Load cached tasks from IndexedDB immediately (instant, <5ms)
 		await this.loadFromIDB();
 
-		// 2. Fetch fresh data from Supabase if online
-		if (connectivity.isOnline) {
-			await this.fetchAndSyncFromSupabase();
-		}
-
-		// 3. Set up Realtime subscription
+		// 2. Set up Realtime subscription
 		this.setupSubscription();
+
+		// 3. Fetch fresh data from Supabase in the background without blocking startup
+		if (connectivity.isOnline) {
+			this.fetchAndSyncFromSupabase();
+		}
 	}
 
 	// ------------------------------------------------------------------

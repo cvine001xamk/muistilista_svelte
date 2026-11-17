@@ -7,6 +7,7 @@
 	src: url('lib/fonts/Gabarito-VariableFont_wght.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
@@ -14,6 +15,7 @@
 	src: url('lib/fonts/Pacifico-Regular.ttf') format('truetype');
 	font-weight: normal;
 	font-style: normal;
+	font-display: swap;
 }
 
 h1 {

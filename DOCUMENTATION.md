@@ -433,7 +433,7 @@ These items should be addressed alongside the main phases:
 | 🔧 **Hardcoded performer** | Completions are always attributed to "Tuntematon". Should use authenticated user name. |
 | ✅ **Input validation** | Added `min="1"` constraint and programmatic verification for task intervals and names. |
 | 🔧 **`vite-plugin-pwa` unused** | Listed as a dependency but not configured in `vite.config.ts`. Either integrate or remove. |
-| 🔧 **Duplicate data fetching** | Both `+page.ts` and `GlobalState.init()` fetch the same tasks. Consolidate to one source. |
+| ✅ **Consolidated data fetching & instant startup** | Removed blocking network fetches from `+page.ts` and enabled non-blocking IndexedDB cache-first startup. |
 
 ---
 

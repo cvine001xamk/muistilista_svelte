@@ -30,16 +30,16 @@ class CompletionsState {
 		if (this.initialized) return;
 		this.initialized = true;
 
-		// 1. Load cached completions from IndexedDB immediately
+		// 1. Load cached completions from IndexedDB immediately (instant, <5ms)
 		await this.loadFromIDB();
 
-		// 2. Fetch fresh data from Supabase if online
-		if (connectivity.isOnline) {
-			await this.fetchAndSyncFromSupabase();
-		}
-
-		// 3. Setup real-time updates
+		// 2. Setup real-time updates
 		this.setupSubscription();
+
+		// 3. Fetch fresh data from Supabase in background without blocking
+		if (connectivity.isOnline) {
+			this.fetchAndSyncFromSupabase();
+		}
 	}
 
 	async loadFromIDB() {
