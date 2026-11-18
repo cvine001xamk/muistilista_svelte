@@ -45,12 +45,17 @@ class OstoslistaState {
 		try {
 			const cached = await db.ostokset.toArray();
 			if (cached.length > 0) {
-				this.items = cached.sort((a, b) => {
+				const normalized: Ostos[] = cached.map((item) => ({
+					...item,
+					id: String(item.id),
+					completed: Boolean(item.completed)
+				}));
+				this.items = normalized.sort((a, b) => {
 					const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
 					const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
 					if (dateA !== dateB) return dateB - dateA;
-					const idA = typeof a.id === 'number' ? a.id : parseInt(String(a.id).replace('temp_', ''), 10) || 0;
-					const idB = typeof b.id === 'number' ? b.id : parseInt(String(b.id).replace('temp_', ''), 10) || 0;
+					const idA = parseInt(String(a.id).replace('temp_', ''), 10) || 0;
+					const idB = parseInt(String(b.id).replace('temp_', ''), 10) || 0;
 					return idB - idA;
 				});
 			} else {

@@ -23,7 +23,6 @@
 	// --- Drag-to-reorder state ---
 	let draggedId = $state<string | null>(null);
 	let dragOverId = $state<string | null>(null);
-	/** Local sort order: an array of item IDs for uncompleted items only. */
 	let sortOrder = $state<string[]>([]);
 
 	const SORT_KEY = 'ostoslista_sort_order';
@@ -31,7 +30,14 @@
 	function loadSortOrder() {
 		try {
 			const raw = localStorage.getItem(SORT_KEY);
-			sortOrder = raw ? (JSON.parse(raw) as string[]) : [];
+			if (raw) {
+				const parsed = JSON.parse(raw);
+				if (Array.isArray(parsed)) {
+					sortOrder = parsed.map(String);
+					return;
+				}
+			}
+			sortOrder = [];
 		} catch {
 			sortOrder = [];
 		}
@@ -57,22 +63,30 @@
 	const completedItems = $derived(allItems.filter((item) => item.completed));
 
 	/**
-	 * Uncompleted items sorted by the user's drag order.
-	 * Items not yet in sortOrder (e.g. newly added) are prepended.
+	 * Uncompleted items sorted by the user's custom drag order.
+	 * PURE DERIVATION: Never mutates state. Guarantees every uncompleted item is included.
 	 */
 	const sortedUncompleted = $derived.by(() => {
-		const ids = uncompletedItems.map((i) => i.id);
-		// Keep only IDs that still exist
-		const filtered = sortOrder.filter((id) => ids.includes(id));
-		// New items not yet in sortOrder get prepended
-		const newIds = ids.filter((id) => !filtered.includes(id));
-		const finalOrder = [...newIds, ...filtered];
-		// Persist if changed
-		if (finalOrder.join(',') !== sortOrder.join(',')) {
-			sortOrder = finalOrder;
-			saveSortOrder(finalOrder);
-		}
-		return finalOrder.map((id) => uncompletedItems.find((i) => i.id === id)!).filter(Boolean);
+		if (sortOrder.length === 0) return uncompletedItems;
+
+		const orderMap = new Map<string, number>();
+		sortOrder.forEach((id, index) => {
+			orderMap.set(String(id), index);
+		});
+
+		return [...uncompletedItems].sort((a, b) => {
+			const idA = String(a.id);
+			const idB = String(b.id);
+			const indexA = orderMap.has(idA) ? orderMap.get(idA)! : -1;
+			const indexB = orderMap.has(idB) ? orderMap.get(idB)! : -1;
+
+			if (indexA !== -1 && indexB !== -1) {
+				return indexA - indexB;
+			}
+			if (indexA === -1 && indexB !== -1) return -1;
+			if (indexA !== -1 && indexB === -1) return 1;
+			return 0;
+		});
 	});
 
 	const displayedItems = $derived.by(() => {
@@ -81,40 +95,47 @@
 		return [...sortedUncompleted, ...completedItems];
 	});
 
-	// --- Drag handlers ---
-	function onDragStart(e: DragEvent, id: string) {
-		draggedId = id;
+	function handleReorder(fromId: string | number, toId: string | number) {
+		const sFrom = String(fromId);
+		const sTo = String(toId);
+		if (sFrom === sTo) return;
+
+		const current = [...sortedUncompleted];
+		const fromIndex = current.findIndex((i) => String(i.id) === sFrom);
+		const toIndex = current.findIndex((i) => String(i.id) === sTo);
+		if (fromIndex === -1 || toIndex === -1) return;
+
+		const [moved] = current.splice(fromIndex, 1);
+		current.splice(toIndex, 0, moved);
+
+		const newOrder = current.map((i) => String(i.id));
+		sortOrder = newOrder;
+		saveSortOrder(newOrder);
+	}
+
+	// --- Desktop Drag handlers ---
+	function onDragStart(e: DragEvent, id: string | number) {
+		draggedId = String(id);
 		if (e.dataTransfer) {
 			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setData('text/plain', id);
+			e.dataTransfer.setData('text/plain', String(id));
 		}
 	}
 
-	function onDragOver(e: DragEvent, id: string) {
+	function onDragOver(e: DragEvent, id: string | number) {
 		e.preventDefault();
 		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-		if (id !== draggedId) dragOverId = id;
+		const sId = String(id);
+		if (sId !== draggedId) {
+			dragOverId = sId;
+		}
 	}
 
-	function onDrop(e: DragEvent, targetId: string) {
+	function onDrop(e: DragEvent, targetId: string | number) {
 		e.preventDefault();
-		if (!draggedId || draggedId === targetId) {
-			draggedId = null;
-			dragOverId = null;
-			return;
+		if (draggedId) {
+			handleReorder(draggedId, targetId);
 		}
-		const order = [...sortOrder];
-		const fromIdx = order.indexOf(draggedId);
-		const toIdx = order.indexOf(targetId);
-		if (fromIdx === -1 || toIdx === -1) {
-			draggedId = null;
-			dragOverId = null;
-			return;
-		}
-		order.splice(fromIdx, 1);
-		order.splice(toIdx, 0, draggedId);
-		sortOrder = order;
-		saveSortOrder(order);
 		draggedId = null;
 		dragOverId = null;
 	}
@@ -129,9 +150,8 @@
 	let touchOverId = $state<string | null>(null);
 	let touchGhost = $state<{ x: number; y: number; label: string } | null>(null);
 
-	function onTouchStart(e: TouchEvent, id: string, label: string) {
-		// Only start drag from the handle (target check done in template)
-		touchDragId = id;
+	function onTouchStart(e: TouchEvent, id: string | number, label: string) {
+		touchDragId = String(id);
 		const t = e.touches[0];
 		touchGhost = { x: t.clientX, y: t.clientY, label };
 	}
@@ -140,25 +160,18 @@
 		if (!touchDragId) return;
 		e.preventDefault();
 		const t = e.touches[0];
-		if (touchGhost) touchGhost = { ...touchGhost, x: t.clientX, y: t.clientY };
-		// Find element under finger
+		if (touchGhost) {
+			touchGhost = { ...touchGhost, x: t.clientX, y: t.clientY };
+		}
 		const el = document.elementFromPoint(t.clientX, t.clientY);
 		const li = el?.closest('[data-item-id]');
 		const overId = li?.getAttribute('data-item-id') ?? null;
-		touchOverId = overId !== touchDragId ? overId : null;
+		touchOverId = overId && overId !== touchDragId ? overId : null;
 	}
 
 	function onTouchEnd() {
 		if (touchDragId && touchOverId) {
-			const order = [...sortOrder];
-			const fromIdx = order.indexOf(touchDragId);
-			const toIdx = order.indexOf(touchOverId);
-			if (fromIdx !== -1 && toIdx !== -1) {
-				order.splice(fromIdx, 1);
-				order.splice(toIdx, 0, touchDragId);
-				sortOrder = order;
-				saveSortOrder(order);
-			}
+			handleReorder(touchDragId, touchOverId);
 		}
 		touchDragId = null;
 		touchOverId = null;
@@ -359,18 +372,19 @@
 			ontouchend={onTouchEnd}
 		>
 			{#each displayedItems as item (item.id)}
-				{@const isDragging = draggedId === item.id || touchDragId === item.id}
-				{@const isOver = dragOverId === item.id || touchOverId === item.id}
+				{@const strId = String(item.id)}
+				{@const isDragging = draggedId === strId || touchDragId === strId}
+				{@const isOver = dragOverId === strId || touchOverId === strId}
 				{@const isDraggable = !item.completed}
 				<li
 					in:fly={{ y: 15, duration: 250 }}
 					out:slide={{ duration: 200 }}
 					animate:flip={{ duration: 250 }}
-					data-item-id={item.id}
+					data-item-id={strId}
 					draggable={isDraggable}
-					ondragstart={isDraggable ? (e) => onDragStart(e, item.id) : undefined}
-					ondragover={isDraggable ? (e) => onDragOver(e, item.id) : undefined}
-					ondrop={isDraggable ? (e) => onDrop(e, item.id) : undefined}
+					ondragstart={isDraggable ? (e) => onDragStart(e, strId) : undefined}
+					ondragover={isDraggable ? (e) => onDragOver(e, strId) : undefined}
+					ondrop={isDraggable ? (e) => onDrop(e, strId) : undefined}
 					ondragend={onDragEnd}
 					class="group flex items-center justify-between gap-3 rounded-2xl px-4 py-3 shadow-md backdrop-blur-md transition-all border
 					{item.completed
@@ -385,7 +399,7 @@
 							type="button"
 							class="flex-shrink-0 cursor-grab touch-none text-white/30 hover:text-white/70 active:cursor-grabbing transition-colors p-0.5 -ml-1"
 							aria-label="Järjestä vetämällä"
-							ontouchstart={(e) => onTouchStart(e, item.id, item.nimi)}
+							ontouchstart={(e) => onTouchStart(e, strId, item.nimi)}
 						>
 							<svg class="size-5" viewBox="0 0 20 20" fill="currentColor">
 								<circle cx="7" cy="5" r="1.5" />
