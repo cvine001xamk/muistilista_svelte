@@ -158,7 +158,8 @@ A modern, offline-first shared shopping list with:
 - Check/uncheck items with smooth visual states
 - Single-tap removal with instant "Kumoa" (Undo) toast
 - Filters (All, Unchecked, Checked) and "Poista ostetut" action
-- Real-time synchronization across all household devices via Supabase and local IndexedDB cache
+- **Drag-to-reorder** for uncompleted items (supports desktop mouse drag and mobile touch gestures with `localStorage` order persistence)
+- Real-time synchronization across devices via Supabase Realtime channel and local IndexedDB cache (requires `ostokset` table in `supabase_realtime` publication)
 
 ### 5. 🍎 Seasonal Produce Calendar (`/sesongissa`)
 
@@ -371,9 +372,8 @@ muistilista_svelte/
 | **Accessibility audit** | ARIA labels, keyboard navigation, screen reader support, focus management | 🟡 Important |
 | **Smart task suggestions** | Use AI (Gemini API key already present) to suggest common household tasks during onboarding | 🟢 Nice to have |
 | **Performer name (pre-auth)** | Store a user-chosen display name in `localStorage` and use it as `suorittaja` instead of hardcoded "Tuntematon" — zero-auth quick win | 🔴 High impact |
-| **Shopping list real-time sync** | Run `ALTER PUBLICATION supabase_realtime ADD TABLE ostokset;` in Supabase — app subscription code is ready, only a DB config step needed | 🔴 High impact |
+| **Shopping list real-time DB activation** | Run `ALTER PUBLICATION supabase_realtime ADD TABLE ostokset;` in Supabase SQL editor — client code and subscription are complete, waiting on DB replication activation | 🔴 High impact (Backend config) |
 | **Task "Snooze" / lykkää** | Postpone a task's due date by N days without marking it complete — add a "Lykkää X päivää" button in the task dialog | 🟡 Important |
-| **Shopping list reordering** | Drag-to-reorder or pin items on the shopping list; currently sorted only by `created_at` | 🟢 Nice to have |
 | **Completion streak counter** | Show per-task streak count (consecutive on-time completions) on the task card — motivates consistent upkeep | 🟢 Nice to have |
 
 ---
