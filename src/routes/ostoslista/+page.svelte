@@ -20,6 +20,33 @@
 	let filter = $state<'all' | 'active' | 'completed'>('all');
 	let nameInputRef = $state<HTMLInputElement | null>(null);
 
+	// --- Drag-to-reorder state ---
+	let draggedId = $state<string | null>(null);
+	let dragOverId = $state<string | null>(null);
+	/** Local sort order: an array of item IDs for uncompleted items only. */
+	let sortOrder = $state<string[]>([]);
+
+	const SORT_KEY = 'ostoslista_sort_order';
+
+	function loadSortOrder() {
+		try {
+			const raw = localStorage.getItem(SORT_KEY);
+			sortOrder = raw ? (JSON.parse(raw) as string[]) : [];
+		} catch {
+			sortOrder = [];
+		}
+	}
+
+	function saveSortOrder(order: string[]) {
+		try {
+			localStorage.setItem(SORT_KEY, JSON.stringify(order));
+		} catch {}
+	}
+
+	$effect(() => {
+		loadSortOrder();
+	});
+
 	const allItems = $derived(
 		ostoslistaState.items.length > 0 || ostoslistaState.initialized
 			? ostoslistaState.items
@@ -29,12 +56,114 @@
 	const uncompletedItems = $derived(allItems.filter((item) => !item.completed));
 	const completedItems = $derived(allItems.filter((item) => item.completed));
 
-	const displayedItems = $derived.by(() => {
-		if (filter === 'active') return uncompletedItems;
-		if (filter === 'completed') return completedItems;
-		// In 'all' view, show uncompleted items first, completed items at the end
-		return [...uncompletedItems, ...completedItems];
+	/**
+	 * Uncompleted items sorted by the user's drag order.
+	 * Items not yet in sortOrder (e.g. newly added) are prepended.
+	 */
+	const sortedUncompleted = $derived.by(() => {
+		const ids = uncompletedItems.map((i) => i.id);
+		// Keep only IDs that still exist
+		const filtered = sortOrder.filter((id) => ids.includes(id));
+		// New items not yet in sortOrder get prepended
+		const newIds = ids.filter((id) => !filtered.includes(id));
+		const finalOrder = [...newIds, ...filtered];
+		// Persist if changed
+		if (finalOrder.join(',') !== sortOrder.join(',')) {
+			sortOrder = finalOrder;
+			saveSortOrder(finalOrder);
+		}
+		return finalOrder.map((id) => uncompletedItems.find((i) => i.id === id)!).filter(Boolean);
 	});
+
+	const displayedItems = $derived.by(() => {
+		if (filter === 'active') return sortedUncompleted;
+		if (filter === 'completed') return completedItems;
+		return [...sortedUncompleted, ...completedItems];
+	});
+
+	// --- Drag handlers ---
+	function onDragStart(e: DragEvent, id: string) {
+		draggedId = id;
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', id);
+		}
+	}
+
+	function onDragOver(e: DragEvent, id: string) {
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+		if (id !== draggedId) dragOverId = id;
+	}
+
+	function onDrop(e: DragEvent, targetId: string) {
+		e.preventDefault();
+		if (!draggedId || draggedId === targetId) {
+			draggedId = null;
+			dragOverId = null;
+			return;
+		}
+		const order = [...sortOrder];
+		const fromIdx = order.indexOf(draggedId);
+		const toIdx = order.indexOf(targetId);
+		if (fromIdx === -1 || toIdx === -1) {
+			draggedId = null;
+			dragOverId = null;
+			return;
+		}
+		order.splice(fromIdx, 1);
+		order.splice(toIdx, 0, draggedId);
+		sortOrder = order;
+		saveSortOrder(order);
+		draggedId = null;
+		dragOverId = null;
+	}
+
+	function onDragEnd() {
+		draggedId = null;
+		dragOverId = null;
+	}
+
+	// --- Touch drag state ---
+	let touchDragId = $state<string | null>(null);
+	let touchOverId = $state<string | null>(null);
+	let touchGhost = $state<{ x: number; y: number; label: string } | null>(null);
+
+	function onTouchStart(e: TouchEvent, id: string, label: string) {
+		// Only start drag from the handle (target check done in template)
+		touchDragId = id;
+		const t = e.touches[0];
+		touchGhost = { x: t.clientX, y: t.clientY, label };
+	}
+
+	function onTouchMove(e: TouchEvent) {
+		if (!touchDragId) return;
+		e.preventDefault();
+		const t = e.touches[0];
+		if (touchGhost) touchGhost = { ...touchGhost, x: t.clientX, y: t.clientY };
+		// Find element under finger
+		const el = document.elementFromPoint(t.clientX, t.clientY);
+		const li = el?.closest('[data-item-id]');
+		const overId = li?.getAttribute('data-item-id') ?? null;
+		touchOverId = overId !== touchDragId ? overId : null;
+	}
+
+	function onTouchEnd() {
+		if (touchDragId && touchOverId) {
+			const order = [...sortOrder];
+			const fromIdx = order.indexOf(touchDragId);
+			const toIdx = order.indexOf(touchOverId);
+			if (fromIdx !== -1 && toIdx !== -1) {
+				order.splice(fromIdx, 1);
+				order.splice(toIdx, 0, touchDragId);
+				sortOrder = order;
+				saveSortOrder(order);
+			}
+		}
+		touchDragId = null;
+		touchOverId = null;
+		touchGhost = null;
+	}
 
 	async function addItem(e: SubmitEvent) {
 		e.preventDefault();
@@ -214,17 +343,63 @@
 			<p class="text-sm text-white/70">Ei tuotteita valitulla suodatuksella.</p>
 		</div>
 	{:else}
-		<ul class="flex flex-col gap-2">
+		<!-- Touch ghost element -->
+		{#if touchGhost}
+			<div
+				class="pointer-events-none fixed z-50 rounded-xl bg-white/30 px-4 py-2 text-sm font-semibold text-white shadow-xl backdrop-blur-md border border-white/40 -translate-x-1/2 -translate-y-1/2"
+				style="left:{touchGhost.x}px;top:{touchGhost.y}px"
+			>
+				{touchGhost.label}
+			</div>
+		{/if}
+
+		<ul
+			class="flex flex-col gap-2"
+			ontouchmove={onTouchMove}
+			ontouchend={onTouchEnd}
+		>
 			{#each displayedItems as item (item.id)}
+				{@const isDragging = draggedId === item.id || touchDragId === item.id}
+				{@const isOver = dragOverId === item.id || touchOverId === item.id}
+				{@const isDraggable = !item.completed}
 				<li
 					in:fly={{ y: 15, duration: 250 }}
 					out:slide={{ duration: 200 }}
 					animate:flip={{ duration: 250 }}
+					data-item-id={item.id}
+					draggable={isDraggable}
+					ondragstart={isDraggable ? (e) => onDragStart(e, item.id) : undefined}
+					ondragover={isDraggable ? (e) => onDragOver(e, item.id) : undefined}
+					ondrop={isDraggable ? (e) => onDrop(e, item.id) : undefined}
+					ondragend={onDragEnd}
 					class="group flex items-center justify-between gap-3 rounded-2xl px-4 py-3 shadow-md backdrop-blur-md transition-all border
 					{item.completed
 						? 'bg-white/5 border-white/5 opacity-60'
-						: 'bg-white/15 border-white/15 hover:bg-white/20 hover:border-white/25'}"
+						: 'bg-white/15 border-white/15 hover:bg-white/20 hover:border-white/25'}
+					{isDragging ? 'opacity-40 scale-95' : ''}
+					{isOver && !item.completed ? 'border-pink-400/60 bg-pink-500/15 shadow-pink-500/20' : ''}"
 				>
+					<!-- Drag handle (uncompleted items only) -->
+					{#if !item.completed}
+						<button
+							type="button"
+							class="flex-shrink-0 cursor-grab touch-none text-white/30 hover:text-white/70 active:cursor-grabbing transition-colors p-0.5 -ml-1"
+							aria-label="Järjestä vetämällä"
+							ontouchstart={(e) => onTouchStart(e, item.id, item.nimi)}
+						>
+							<svg class="size-5" viewBox="0 0 20 20" fill="currentColor">
+								<circle cx="7" cy="5" r="1.5" />
+								<circle cx="13" cy="5" r="1.5" />
+								<circle cx="7" cy="10" r="1.5" />
+								<circle cx="13" cy="10" r="1.5" />
+								<circle cx="7" cy="15" r="1.5" />
+								<circle cx="13" cy="15" r="1.5" />
+							</svg>
+						</button>
+					{:else}
+						<div class="w-5 flex-shrink-0 -ml-1"></div>
+					{/if}
+
 					<!-- Custom Checkbox & Label -->
 					<label class="flex flex-grow items-center gap-3.5 cursor-pointer select-none">
 						<input
