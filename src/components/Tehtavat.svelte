@@ -27,7 +27,7 @@
 	});
 </script>
 
-<div class="flex flex-col items-center justify-center w-full md:max-w-3xl" in:fade>
+<div class="flex flex-col items-center justify-center w-full md:max-w-3xl">
 	<!-- Search bar -->
 	<div class="relative mb-4 w-full max-w-md">
 		<input

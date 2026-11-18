@@ -60,7 +60,6 @@
 {:else}
 	<div
 		class="max-w-full overflow-x-auto rounded-md bg-slate-800 p-1 shadow"
-		in:fade={{ duration: 300 }}
 	>
 		<table class="w-full table-fixed border-collapse text-sm text-slate-200">
 			<!-- thead -->

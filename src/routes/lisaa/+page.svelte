@@ -40,7 +40,7 @@
 	}
 </script>
 
-<div class="flex justify-center" in:fade>
+<div class="flex justify-center">
 	<form onsubmit={handleSubmit} class="w-full gap-4">
 		{#if error}
 			<div class="mb-4 rounded-lg bg-red-100 p-4 text-red-700">

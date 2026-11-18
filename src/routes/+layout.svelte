@@ -4,6 +4,8 @@
 	import ConnectivityBanner from '../components/ConnectivityBanner.svelte';
 	import ToastContainer from '../components/ToastContainer.svelte';
 	import { globalState } from '$lib/state.svelte';
+	import { page } from '$app/stores';
+	import { fade } from 'svelte/transition';
 	// Import connectivity singleton so it registers online/offline listeners
 	import '$lib/connectivity.svelte';
 
@@ -22,7 +24,11 @@
 	</div>
 	<!-- Desktop: top padding for fixed nav, Mobile: top padding + bottom padding for bottom nav -->
 	<div class="mb-20 mt-16 w-full max-w-md p-4 md:mb-0 md:max-w-3xl">
-		{@render children()}
+		{#key $page.url.pathname}
+			<div in:fade={{ duration: 200 }}>
+				{@render children()}
+			</div>
+		{/key}
 	</div>
 	<ConnectivityBanner />
 	<ToastContainer />

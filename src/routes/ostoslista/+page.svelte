@@ -88,7 +88,7 @@
 	}
 </script>
 
-<div class="mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-xl" in:fade>
+<div class="mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-xl">
 	<!-- Header -->
 	<header class="flex flex-col gap-1">
 		<div class="flex items-center justify-between">
