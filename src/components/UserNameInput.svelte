@@ -10,12 +10,12 @@
 </script>
 
 <label
-	class="group relative inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-xs sm:text-sm text-white backdrop-blur-md border border-white/20 transition-all hover:bg-white/20 focus-within:bg-white/25 focus-within:border-pink-300/70 focus-within:ring-2 focus-within:ring-pink-400/40 shadow-sm cursor-text max-w-[130px] sm:max-w-[160px]"
+	class="group relative inline-flex max-w-[130px] cursor-text items-center rounded-full border border-white/20 bg-white/15 px-2.5 py-1 text-xs text-white shadow-sm backdrop-blur-md transition-all focus-within:border-pink-300/70 focus-within:bg-white/25 focus-within:ring-2 focus-within:ring-pink-400/40 hover:bg-white/20 sm:max-w-[160px] sm:text-sm"
 	title={userState.name ? `Suorittaja: ${userState.name}` : 'Aseta etunimesi suorituksia varten'}
 >
 	<!-- User avatar icon -->
 	<svg
-		class="size-3.5 sm:size-4 text-white/70 mr-1.5 flex-shrink-0 transition-colors group-hover:text-white"
+		class="mr-1.5 size-3.5 flex-shrink-0 text-white/70 transition-colors group-hover:text-white sm:size-4"
 		viewBox="0 0 20 20"
 		fill="currentColor"
 		aria-hidden="true"
@@ -28,9 +28,9 @@
 	</svg>
 
 	<!-- Auto-sizing text container with flashing cursor -->
-	<div class="relative inline-flex items-center min-w-[36px] max-w-[80px] sm:max-w-[105px]">
+	<div class="relative inline-flex min-w-[36px] max-w-[80px] items-center sm:max-w-[105px]">
 		<!-- Hidden measuring span matching the font and size -->
-		<span class="invisible whitespace-pre font-medium select-none text-xs sm:text-sm truncate">
+		<span class="invisible select-none truncate whitespace-pre text-xs font-medium sm:text-sm">
 			{userState.name || 'Nimi'}
 		</span>
 
@@ -41,32 +41,9 @@
 			oninput={handleInput}
 			placeholder="Nimi"
 			maxlength="15"
-			class="absolute inset-0 w-full bg-transparent font-medium text-white placeholder-white/40 focus:outline-none text-xs sm:text-sm"
+			class="absolute inset-0 w-full bg-transparent text-xs font-medium text-white placeholder-white/40 focus:outline-none sm:text-sm"
 			style="caret-color: transparent;"
 			aria-label="Käyttäjän etunimi"
 		/>
-
-		<!-- Flashing cursor pointer (always visible and flashing) -->
-		<span
-			class="pointer-events-none inline-block w-[2px] h-3 sm:h-3.5 bg-pink-300 ml-[1px] rounded-full animate-cursor-blink flex-shrink-0"
-			aria-hidden="true"
-		></span>
 	</div>
 </label>
-
-<style>
-	@keyframes cursorBlink {
-		0%,
-		49% {
-			opacity: 1;
-		}
-		50%,
-		100% {
-			opacity: 0;
-		}
-	}
-
-	.animate-cursor-blink {
-		animation: cursorBlink 0.85s infinite;
-	}
-</style>
