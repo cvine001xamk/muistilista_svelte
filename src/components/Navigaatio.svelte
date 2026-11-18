@@ -4,6 +4,7 @@
 	import ShoppingIcon from '$lib/icons/ShoppingIcon.svelte';
 	import FruitIcon from '$lib/icons/FruitIcon.svelte';
 	import BellIcon from '$lib/icons/BellIcon.svelte';
+	import UserNameInput from './UserNameInput.svelte';
 	import { page } from '$app/stores';
 
 	import { globalState } from '$lib/state.svelte';
@@ -14,60 +15,67 @@
 
 <!-- Desktop Navigation (Top) -->
 <div class="hidden bg-gradient-to-r from-purple-600 to-pink-600 p-3 shadow-lg md:block">
-	<div class="flex flex-row items-center justify-evenly gap-4">
-		<a href="/">
+	<div class="relative mx-auto flex max-w-7xl flex-row items-center justify-between gap-4 px-4">
+		<a href="/" class="flex-shrink-0">
 			<h1 class="neon text-3xl">muistilista</h1>
 		</a>
-		<a
-			href="/lisaa"
-			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/lisaa' ? 'ring-2 ring-white/50' : ''}"
-			aria-label="Lisää tehtävä"
-		>
-			<PlusIcon />
-			<span class="hidden lg:inline">Lisää</span>
-		</a>
-		<a
-			href="/suoritukset"
-			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/suoritukset' ? 'ring-2 ring-white/50' : ''}"
-			aria-label="Suoritukset"
-		>
-			<SheetIcon />
-			<span class="hidden lg:inline">Suoritukset</span>
-		</a>
-		<a
-			href="/ostoslista"
-			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/ostoslista' ? 'ring-2 ring-white/50' : ''}"
-			aria-label="Ostoslista"
-		>
-			<ShoppingIcon />
-			<span class="hidden lg:inline">Ostoslista</span>
-		</a>
-		<a
-			href="/sesongissa"
-			class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/sesongissa' ? 'ring-2 ring-white/50' : ''}"
-			aria-label="Sesonkikalenteri"
-		>
-			<FruitIcon />
-			<span class="hidden lg:inline">Sesongissa</span>
-		</a>
-		
-		{#if globalState.notificationPermission === 'default'}
-			<button
-				onclick={() => globalState.requestNotificationPermission()}
-				class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 animate-pulse"
-				aria-label="Salli ilmoitukset"
+		<div class="flex flex-grow flex-row items-center justify-center gap-3 lg:gap-4">
+			<a
+				href="/lisaa"
+				class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/lisaa' ? 'ring-2 ring-white/50' : ''}"
+				aria-label="Lisää tehtävä"
 			>
-				<BellIcon />
-				<span class="hidden lg:inline">Salli ilmoitukset</span>
-			</button>
-		{/if}
+				<PlusIcon />
+				<span class="hidden lg:inline">Lisää</span>
+			</a>
+			<a
+				href="/suoritukset"
+				class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/suoritukset' ? 'ring-2 ring-white/50' : ''}"
+				aria-label="Suoritukset"
+			>
+				<SheetIcon />
+				<span class="hidden lg:inline">Suoritukset</span>
+			</a>
+			<a
+				href="/ostoslista"
+				class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/ostoslista' ? 'ring-2 ring-white/50' : ''}"
+				aria-label="Ostoslista"
+			>
+				<ShoppingIcon />
+				<span class="hidden lg:inline">Ostoslista</span>
+			</a>
+			<a
+				href="/sesongissa"
+				class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 {currentPath === '/sesongissa' ? 'ring-2 ring-white/50' : ''}"
+				aria-label="Sesonkikalenteri"
+			>
+				<FruitIcon />
+				<span class="hidden lg:inline">Sesongissa</span>
+			</a>
+			
+			{#if globalState.notificationPermission === 'default'}
+				<button
+					onclick={() => globalState.requestNotificationPermission()}
+					class="btn btn-primary flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/30 animate-pulse"
+					aria-label="Salli ilmoitukset"
+				>
+					<BellIcon />
+					<span class="hidden lg:inline">Salli ilmoitukset</span>
+				</button>
+			{/if}
+		</div>
+
+		<!-- Upper right corner: User name input -->
+		<div class="flex-shrink-0">
+			<UserNameInput />
+		</div>
 	</div>
 </div>
 
 <!-- Mobile Top Bar (Logo) -->
-<div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600 to-pink-600 p-3 shadow-lg md:hidden">
-	<div class="flex flex-row items-center justify-between px-4">
-		<div class="w-8">
+<div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600 to-pink-600 p-2.5 shadow-lg md:hidden">
+	<div class="flex flex-row items-center justify-between px-3">
+		<div class="w-8 flex-shrink-0">
 			<!-- Spacer to center logo -->
 			{#if globalState.notificationPermission === 'default'}
 				<button
@@ -79,10 +87,12 @@
 				</button>
 			{/if}
 		</div>
-		<a href="/">
+		<a href="/" class="flex-shrink-0">
 			<h1 class="neon text-2xl">muistilista</h1>
 		</a>
-		<div class="w-8"></div>
+		<div class="flex-shrink-0">
+			<UserNameInput />
+		</div>
 	</div>
 </div>
 

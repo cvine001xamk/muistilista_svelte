@@ -371,7 +371,6 @@ muistilista_svelte/
 | **Multi-language support (i18n)** | Add English language support alongside Finnish | 🟢 Nice to have |
 | **Accessibility audit** | ARIA labels, keyboard navigation, screen reader support, focus management | 🟡 Important |
 | **Smart task suggestions** | Use AI (Gemini API key already present) to suggest common household tasks during onboarding | 🟢 Nice to have |
-| **Performer name (pre-auth)** | Store a user-chosen display name in `localStorage` and use it as `suorittaja` instead of hardcoded "Tuntematon" — zero-auth quick win | 🔴 High impact |
 | **Shopping list real-time DB activation** | Run `ALTER PUBLICATION supabase_realtime ADD TABLE ostokset;` in Supabase SQL editor — client code and subscription are complete, waiting on DB replication activation | 🔴 High impact (Backend config) |
 | **Task "Snooze" / lykkää** | Postpone a task's due date by N days without marking it complete — add a "Lykkää X päivää" button in the task dialog | 🟡 Important |
 | **Completion streak counter** | Show per-task streak count (consecutive on-time completions) on the task card — motivates consistent upkeep | 🟢 Nice to have |
@@ -415,7 +414,7 @@ These items should be addressed alongside the main phases:
 | Item | Description |
 |---|---|
 | ⚠️ **Exposed secrets in `.env`** | Supabase anon key and Gemini API key are committed to git. Move to environment-only variables and rotate keys. |
-| 🔧 **Hardcoded performer** | Completions are always attributed to "Tuntematon". Should use authenticated user name (or a `localStorage` display name as a pre-auth quick win). |
+| ✅ **Performer name (pre-auth)** | Added local device user name input in the upper right corner with continuous flashing cursor; used as `suorittaja` on completions instead of static "Tuntematon". |
 | 🔧 **`vite-plugin-pwa` unused** | Listed as a dependency but not configured in `vite.config.ts`. Either integrate or remove. |
 | 🔧 **CSR-only but doc says SSR** | `+layout.ts` exports `ssr = false` making this a pure CSR/PWA; the architecture section still mentions "SSR layout". Update or clarify. |
 

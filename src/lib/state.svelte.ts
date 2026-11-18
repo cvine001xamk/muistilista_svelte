@@ -16,6 +16,7 @@ import { laskeJaljellaOlevaAika } from '$lib';
 import { db } from '$lib/db';
 import { enqueueMutation, getPendingMutationIds, onSyncComplete } from '$lib/syncQueue';
 import { connectivity } from '$lib/connectivity.svelte';
+import { userState } from '$lib/user.svelte';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 class GlobalState {
@@ -223,10 +224,12 @@ class GlobalState {
 		const currentEnriched = this.tehtavat.find((t) => t.id === tehtava.id);
 		const previousEdellinenSuoritus = currentEnriched?.edellinenSuoritus ?? null;
 
+		const suorittaja = userState.name.trim() || 'Tuntematon';
+
 		const suoritusData = {
 			tehtava_id: tehtava.id,
 			suoritettu: now,
-			suorittaja: 'Tuntematon',
+			suorittaja,
 			tehtava_nimi: tehtava.nimi
 		};
 
