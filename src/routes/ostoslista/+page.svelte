@@ -236,7 +236,9 @@
 		<div class="flex items-center justify-between">
 			<h1 class="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">Ostoslista</h1>
 			{#if allItems.length > 0}
-				<span class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-md">
+				<span
+					class="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-md"
+				>
 					{uncompletedItems.length} ostettavaa
 				</span>
 			{/if}
@@ -245,7 +247,9 @@
 	</header>
 
 	{#if ostoslistaState.error}
-		<div class="rounded-xl bg-red-500/20 p-3 text-sm text-red-200 backdrop-blur-md border border-red-500/30">
+		<div
+			class="rounded-xl border border-red-500/30 bg-red-500/20 p-3 text-sm text-red-200 backdrop-blur-md"
+		>
 			{ostoslistaState.error}
 		</div>
 	{/if}
@@ -253,32 +257,32 @@
 	<!-- Add Item Form -->
 	<form
 		onsubmit={addItem}
-		class="relative flex items-center rounded-2xl bg-white/15 p-1.5 shadow-lg backdrop-blur-md border border-white/20 transition-all focus-within:border-white/40 focus-within:ring-2 focus-within:ring-pink-500/40"
+		class="relative flex items-center rounded-2xl border border-white/20 bg-white/15 p-1.5 shadow-lg backdrop-blur-md transition-all focus-within:border-white/40 focus-within:ring-2 focus-within:ring-pink-500/40"
 	>
 		<input
 			bind:this={nameInputRef}
 			type="text"
 			bind:value={newItemName}
-			placeholder="Lisää tuote... (esim. Maito)"
-			class="min-w-0 flex-grow bg-transparent px-3 sm:px-4 py-2.5 text-base text-white placeholder-white/50 focus:outline-none"
+			placeholder="Lisää tuote..."
+			class="min-w-0 flex-grow bg-transparent px-3 py-2.5 text-base text-white placeholder-white/50 focus:outline-none sm:px-4"
 			disabled={isSubmitting}
 			required
 		/>
 
-		<div class="h-6 w-px bg-white/20 flex-shrink-0 mx-1"></div>
+		<div class="mx-1 h-6 w-px flex-shrink-0 bg-white/20"></div>
 
 		<input
 			type="text"
 			bind:value={newItemAmount}
-			placeholder="Määrä (esim. 2 kpl)"
-			class="w-24 sm:w-36 bg-transparent px-2 sm:px-3 py-2.5 text-sm sm:text-base text-white placeholder-white/40 focus:outline-none flex-shrink-0"
+			placeholder="Määrä"
+			class="w-24 flex-shrink-0 bg-transparent px-2 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none sm:w-36 sm:px-3 sm:text-base"
 			disabled={isSubmitting}
 		/>
 
 		<button
 			type="submit"
 			disabled={!newItemName.trim() || isSubmitting}
-			class="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-3.5 sm:px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+			class="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:opacity-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4"
 			aria-label="Lisää tuote"
 		>
 			<PlusIcon class="size-5" />
@@ -325,7 +329,7 @@
 				<button
 					type="button"
 					onclick={handleClearCompleted}
-					class="text-white/70 hover:text-rose-300 font-medium transition-colors"
+					class="font-medium text-white/70 transition-colors hover:text-rose-300"
 				>
 					Poista ostetut
 				</button>
@@ -338,7 +342,7 @@
 		<!-- Empty State -->
 		<div
 			in:fade
-			class="flex flex-col items-center justify-center rounded-2xl bg-white/10 p-10 text-center backdrop-blur-md border border-white/15 my-4"
+			class="my-4 flex flex-col items-center justify-center rounded-2xl border border-white/15 bg-white/10 p-10 text-center backdrop-blur-md"
 		>
 			<div class="mb-3 rounded-full bg-white/15 p-4 text-white">
 				<ShoppingIcon class="size-8" />
@@ -351,7 +355,7 @@
 	{:else if displayedItems.length === 0}
 		<div
 			in:fade
-			class="flex flex-col items-center justify-center rounded-2xl bg-white/10 p-8 text-center backdrop-blur-md border border-white/15"
+			class="flex flex-col items-center justify-center rounded-2xl border border-white/15 bg-white/10 p-8 text-center backdrop-blur-md"
 		>
 			<p class="text-sm text-white/70">Ei tuotteita valitulla suodatuksella.</p>
 		</div>
@@ -359,18 +363,14 @@
 		<!-- Touch ghost element -->
 		{#if touchGhost}
 			<div
-				class="pointer-events-none fixed z-50 rounded-xl bg-white/30 px-4 py-2 text-sm font-semibold text-white shadow-xl backdrop-blur-md border border-white/40 -translate-x-1/2 -translate-y-1/2"
+				class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/40 bg-white/30 px-4 py-2 text-sm font-semibold text-white shadow-xl backdrop-blur-md"
 				style="left:{touchGhost.x}px;top:{touchGhost.y}px"
 			>
 				{touchGhost.label}
 			</div>
 		{/if}
 
-		<ul
-			class="flex flex-col gap-2"
-			ontouchmove={onTouchMove}
-			ontouchend={onTouchEnd}
-		>
+		<ul class="flex flex-col gap-2" ontouchmove={onTouchMove} ontouchend={onTouchEnd}>
 			{#each displayedItems as item (item.id)}
 				{@const strId = String(item.id)}
 				{@const isDragging = draggedId === strId || touchDragId === strId}
@@ -386,18 +386,18 @@
 					ondragover={isDraggable ? (e) => onDragOver(e, strId) : undefined}
 					ondrop={isDraggable ? (e) => onDrop(e, strId) : undefined}
 					ondragend={onDragEnd}
-					class="group flex items-center justify-between gap-3 rounded-2xl px-4 py-3 shadow-md backdrop-blur-md transition-all border
+					class="group flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-md backdrop-blur-md transition-all
 					{item.completed
-						? 'bg-white/5 border-white/5 opacity-60'
-						: 'bg-white/15 border-white/15 hover:bg-white/20 hover:border-white/25'}
-					{isDragging ? 'opacity-40 scale-95' : ''}
+						? 'border-white/5 bg-white/5 opacity-60'
+						: 'border-white/15 bg-white/15 hover:border-white/25 hover:bg-white/20'}
+					{isDragging ? 'scale-95 opacity-40' : ''}
 					{isOver && !item.completed ? 'border-pink-400/60 bg-pink-500/15 shadow-pink-500/20' : ''}"
 				>
 					<!-- Drag handle (uncompleted items only) -->
 					{#if !item.completed}
 						<button
 							type="button"
-							class="flex-shrink-0 cursor-grab touch-none text-white/30 hover:text-white/70 active:cursor-grabbing transition-colors p-0.5 -ml-1"
+							class="-ml-1 flex-shrink-0 cursor-grab touch-none p-0.5 text-white/30 transition-colors hover:text-white/70 active:cursor-grabbing"
 							aria-label="Järjestä vetämällä"
 							ontouchstart={(e) => onTouchStart(e, strId, item.nimi)}
 						>
@@ -411,11 +411,11 @@
 							</svg>
 						</button>
 					{:else}
-						<div class="w-5 flex-shrink-0 -ml-1"></div>
+						<div class="-ml-1 w-5 flex-shrink-0"></div>
 					{/if}
 
 					<!-- Custom Checkbox & Label -->
-					<label class="flex flex-grow items-center gap-3.5 cursor-pointer select-none">
+					<label class="flex flex-grow cursor-pointer select-none items-center gap-3.5">
 						<input
 							type="checkbox"
 							checked={item.completed}
@@ -425,7 +425,7 @@
 						<div
 							class="flex size-6 flex-shrink-0 items-center justify-center rounded-lg border transition-all
 							{item.completed
-								? 'bg-emerald-500 border-emerald-400 text-white shadow-sm'
+								? 'border-emerald-400 bg-emerald-500 text-white shadow-sm'
 								: 'border-white/40 bg-white/10 group-hover:border-white/60'}"
 						>
 							{#if item.completed}
@@ -441,15 +441,15 @@
 
 						<div class="flex flex-wrap items-center gap-2">
 							<span
-								class="text-base font-medium transition-all text-white
-								{item.completed ? 'line-through text-white/50' : 'text-white'}"
+								class="text-base font-medium text-white transition-all
+								{item.completed ? 'text-white/50 line-through' : 'text-white'}"
 							>
 								{item.nimi}
 							</span>
 							{#if item.maara}
 								<span
-									class="rounded-lg bg-white/15 px-2 py-0.5 text-xs font-semibold text-white/90 backdrop-blur-sm border border-white/10
-									{item.completed ? 'opacity-50 line-through' : ''}"
+									class="rounded-lg border border-white/10 bg-white/15 px-2 py-0.5 text-xs font-semibold text-white/90 backdrop-blur-sm
+									{item.completed ? 'line-through opacity-50' : ''}"
 								>
 									{item.maara}
 								</span>
@@ -461,7 +461,7 @@
 					<button
 						type="button"
 						onclick={() => removeItem(item)}
-						class="flex size-8 items-center justify-center rounded-xl text-white/50 transition-colors hover:bg-rose-500/20 hover:text-rose-300 active:scale-95 flex-shrink-0"
+						class="flex size-8 flex-shrink-0 items-center justify-center rounded-xl text-white/50 transition-colors hover:bg-rose-500/20 hover:text-rose-300 active:scale-95"
 						aria-label="Poista {item.nimi}"
 					>
 						<DeleteIcon class="size-4" />
