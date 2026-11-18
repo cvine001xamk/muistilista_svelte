@@ -224,10 +224,11 @@ erDiagram
 
 ### Realtime Subscriptions
 
-| Channel | Tables | Events |
-|---|---|---|
-| `global-tehtavat-changes` | `tehtavat`, `suoritukset` | INSERT, UPDATE, DELETE |
-| `suoritukset-changes` | `suoritukset` | INSERT, UPDATE, DELETE |
+| Channel | Tables | Events | Notes |
+|---|---|---|---|
+| `global-tehtavat-changes` | `tehtavat`, `suoritukset` | INSERT, UPDATE, DELETE | Active |
+| `suoritukset-changes` | `suoritukset` | INSERT, UPDATE, DELETE | Active |
+| `ostokset-changes` | `ostokset` | INSERT, UPDATE, DELETE | Code is ready; requires `ALTER PUBLICATION supabase_realtime ADD TABLE ostokset;` in Supabase to activate |
 
 ---
 
@@ -272,7 +273,7 @@ muistilista_svelte/
 │       ├── lisaa/
 │       │   └── +page.svelte       # Add new task form
 │       ├── ostoslista/
-│       │   ├── +page.svelte       # Shopping list (disabled)
+│       │   ├── +page.svelte       # Shopping list (offline-first, real-time)
 │       │   └── +page.ts           # Shopping list data loader
 │       ├── sesongissa/
 │       │   └── +page.svelte       # Seasonal produce calendar
@@ -302,16 +303,7 @@ muistilista_svelte/
 
 ### Phase 1: Foundation — Offline-First Architecture (✅ Valmis / Completed)
 
-> **Goal**: Make the app fully usable without an internet connection. Static assets and dynamic data (tasks, completions, shopping list) are cached locally in IndexedDB; mutations update optimistically and sync to Supabase with an offline queue and conflict resolution.
-
-| Feature | Description | Priority | Tila / Status |
-|---|---|---|---|
-| **IndexedDB local store** | Store all tasks, completions, and shopping list items in IndexedDB (via Dexie.js) as the primary data source | 🔴 Critical | ✅ Valmis |
-| **Optimistic UI updates** | Apply mutations to local store immediately, then sync to Supabase in the background | 🔴 Critical | ✅ Valmis |
-| **Sync queue** | Queue offline mutations (create, update, delete) and replay them when connectivity is restored | 🔴 Critical | ✅ Valmis |
-| **Conflict resolution** | Implement last-write-wins and preserve pending offline edits during remote sync | 🟡 Important | ✅ Valmis |
-| **Connectivity indicator** | Show a subtle banner when the app is offline, and a sync status indicator | 🟢 Nice to have | ✅ Valmis |
-| **Background Sync API** | Use the Background Sync API to defer network requests until connectivity is restored | 🟢 Nice to have | ✅ Valmis |
+> All Phase 1 items are complete. IndexedDB (Dexie.js), optimistic UI, sync queue, conflict resolution, connectivity banner, and Background Sync API are all fully implemented.
 
 ---
 
@@ -368,20 +360,21 @@ muistilista_svelte/
 
 | Feature | Description | Priority |
 |---|---|---|
-| **Swipe-to-complete** | Swipe right on a task card to instantly mark it as done (with undo) | 🔴 High impact (✅ Valmis) |
 | **Pull-to-refresh** | Native-feeling pull-to-refresh gesture on mobile | 🟡 Important |
 | **Task categories / tags** | Group tasks by room, type, or custom tags (e.g., "Kitchen", "Bathroom", "Garden") | 🟡 Important |
 | **Scheduled reminders** | Set specific time-of-day reminders for tasks that are due, via push notification | 🔴 High impact |
-| **Task history chart** | Visual chart showing completion frequency over time (streak tracker) | 🟢 Nice to have |
+| **Task history chart** | Visual chart showing completion frequency over time | 🟢 Nice to have |
 | **Dark / light theme toggle** | Currently hardcoded to a purple gradient; add theme switching | 🟢 Nice to have |
-| **Drag-to-reorder** | Allow manual reordering of tasks (pin important ones) | 🟢 Nice to have |
+| **Drag-to-reorder** | Allow manual reordering of tasks (pin important ones to the top) | 🟢 Nice to have |
 | **Onboarding flow** | First-launch tutorial explaining the app concept for new users | 🟡 Important |
-| **Undo / snackbar** | Show a toast with "Undo" action after completing or deleting a task | 🔴 High impact (✅ Valmis) |
-| **Animated transitions** | Page transitions and list animations (e.g., task flip/glide on completion) | 🟢 Nice to have (✅ Valmis) |
 | **Multi-language support (i18n)** | Add English language support alongside Finnish | 🟢 Nice to have |
 | **Accessibility audit** | ARIA labels, keyboard navigation, screen reader support, focus management | 🟡 Important |
-| **Enable shopping list** | Finish and enable the `/ostoslista` route in navigation | 🟡 Important (✅ Valmis) |
 | **Smart task suggestions** | Use AI (Gemini API key already present) to suggest common household tasks during onboarding | 🟢 Nice to have |
+| **Performer name (pre-auth)** | Store a user-chosen display name in `localStorage` and use it as `suorittaja` instead of hardcoded "Tuntematon" — zero-auth quick win | 🔴 High impact |
+| **Shopping list real-time sync** | Run `ALTER PUBLICATION supabase_realtime ADD TABLE ostokset;` in Supabase — app subscription code is ready, only a DB config step needed | 🔴 High impact |
+| **Task "Snooze" / lykkää** | Postpone a task's due date by N days without marking it complete — add a "Lykkää X päivää" button in the task dialog | 🟡 Important |
+| **Shopping list reordering** | Drag-to-reorder or pin items on the shopping list; currently sorted only by `created_at` | 🟢 Nice to have |
+| **Completion streak counter** | Show per-task streak count (consecutive on-time completions) on the task card — motivates consistent upkeep | 🟢 Nice to have |
 
 ---
 
@@ -393,13 +386,8 @@ gantt
     dateFormat  YYYY-MM-DD
     axisFormat  %b %Y
 
-    section Phase 1: Offline-First
-    IndexedDB local store          :p1a, 2026-11-15, 5d
-    Optimistic UI + Sync queue     :p1b, after p1a, 5d
-    Conflict resolution            :p1c, after p1b, 3d
-
     section Phase 2: Authentication
-    Supabase Auth + RLS            :p2a, after p1c, 5d
+    Supabase Auth + RLS            :p2a, 2026-11-20, 5d
     Household groups               :p2b, after p2a, 4d
     User profiles                  :p2c, after p2b, 2d
 
@@ -413,7 +401,7 @@ gantt
     Quick-complete + refresh       :p4b, after p4a, 3d
 
     section Phase 5: UX Polish
-    Swipe-to-complete + undo       :p5a, after p4b, 3d
+    Performer name + realtime sync :p5a, after p4b, 1d
     Task categories + reminders    :p5b, after p5a, 4d
     Remaining polish               :p5c, after p5b, 5d
 ```
@@ -427,14 +415,10 @@ These items should be addressed alongside the main phases:
 | Item | Description |
 |---|---|
 | ⚠️ **Exposed secrets in `.env`** | Supabase anon key and Gemini API key are committed to git. Move to environment-only variables and rotate keys. |
-| ✅ **Error boundaries** | Added SvelteKit `+error.svelte` page for graceful unhandled error display. |
-| ✅ **Loading states & skeleton loaders** | Added task skeleton cards and empty states on home page while fetching or searching. |
-| ✅ **Migrated to Svelte 5 runes** | Replaced legacy `$:` reactive declarations in `Navigaatio.svelte` with `$derived()`. |
-| 🔧 **Hardcoded performer** | Completions are always attributed to "Tuntematon". Should use authenticated user name. |
-| ✅ **Input validation** | Added `min="1"` constraint and programmatic verification for task intervals and names. |
+| 🔧 **Hardcoded performer** | Completions are always attributed to "Tuntematon". Should use authenticated user name (or a `localStorage` display name as a pre-auth quick win). |
 | 🔧 **`vite-plugin-pwa` unused** | Listed as a dependency but not configured in `vite.config.ts`. Either integrate or remove. |
-| ✅ **Consolidated data fetching & instant startup** | Removed blocking network fetches from `+page.ts` and enabled non-blocking IndexedDB cache-first startup. |
+| 🔧 **CSR-only but doc says SSR** | `+layout.ts` exports `ssr = false` making this a pure CSR/PWA; the architecture section still mentions "SSR layout". Update or clarify. |
 
 ---
 
-*Last updated: November 11, 2026*
+*Last updated: November 18, 2026*
