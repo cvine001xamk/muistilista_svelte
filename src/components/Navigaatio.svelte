@@ -6,6 +6,7 @@
 	import BellIcon from '$lib/icons/BellIcon.svelte';
 	import UserNameInput from './UserNameInput.svelte';
 	import { page } from '$app/stores';
+	import { authState } from '$lib/auth.svelte';
 
 	import { globalState } from '$lib/state.svelte';
 
@@ -65,9 +66,24 @@
 			{/if}
 		</div>
 
-		<!-- Upper right corner: User name input -->
-		<div class="flex-shrink-0">
+		<!-- Upper right corner: User name input + sign-out -->
+		<div class="flex flex-shrink-0 items-center gap-2">
 			<UserNameInput />
+			{#if authState.session}
+				<button
+					onclick={() => authState.signOut()}
+					title="Kirjaudu ulos"
+					class="rounded-lg bg-white/10 p-1.5 text-white/60 transition-all hover:bg-white/20 hover:text-white"
+					aria-label="Kirjaudu ulos"
+				>
+					<!-- logout icon (door-with-arrow) -->
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+						<polyline points="16 17 21 12 16 7"/>
+						<line x1="21" y1="12" x2="9" y2="12"/>
+					</svg>
+				</button>
+			{/if}
 		</div>
 	</div>
 </div>
@@ -90,8 +106,22 @@
 		<a href="/" class="flex-shrink-0">
 			<h1 class="neon text-2xl">muistilista</h1>
 		</a>
-		<div class="flex-shrink-0">
+		<div class="flex flex-shrink-0 items-center gap-1">
 			<UserNameInput />
+			{#if authState.session}
+				<button
+					onclick={() => authState.signOut()}
+					title="Kirjaudu ulos"
+					class="rounded-lg bg-white/10 p-1.5 text-white/60 transition-all hover:bg-white/20 hover:text-white"
+					aria-label="Kirjaudu ulos"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+						<polyline points="16 17 21 12 16 7"/>
+						<line x1="21" y1="12" x2="9" y2="12"/>
+					</svg>
+				</button>
+			{/if}
 		</div>
 	</div>
 </div>
