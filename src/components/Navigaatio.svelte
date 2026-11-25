@@ -4,7 +4,6 @@
 	import ShoppingIcon from '$lib/icons/ShoppingIcon.svelte';
 	import FruitIcon from '$lib/icons/FruitIcon.svelte';
 	import BellIcon from '$lib/icons/BellIcon.svelte';
-	import UserNameInput from './UserNameInput.svelte';
 	import { page } from '$app/stores';
 	import { authState } from '$lib/auth.svelte';
 
@@ -66,9 +65,11 @@
 			{/if}
 		</div>
 
-		<!-- Upper right corner: User name input + sign-out -->
+		<!-- Upper right corner: User name + sign-out -->
 		<div class="flex flex-shrink-0 items-center gap-2">
-			<UserNameInput />
+			{#if authState.displayName}
+				<span class="text-xs font-medium text-white/80 sm:text-sm">{authState.displayName}</span>
+			{/if}
 			{#if authState.session}
 				<button
 					onclick={() => authState.signOut()}
@@ -107,7 +108,6 @@
 			<h1 class="neon text-2xl">muistilista</h1>
 		</a>
 		<div class="flex flex-shrink-0 items-center gap-1">
-			<UserNameInput />
 			{#if authState.session}
 				<button
 					onclick={() => authState.signOut()}

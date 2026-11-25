@@ -11,7 +11,6 @@
  */
 
 import { supabase } from '$lib/supabase';
-import { userState } from '$lib/user.svelte';
 import type { Session, User } from '@supabase/supabase-js';
 
 class AuthState {
@@ -27,16 +26,10 @@ class AuthState {
 	async init() {
 		const { data } = await supabase.auth.getSession();
 		this.session = data.session;
-		if (data.session?.user?.user_metadata?.name) {
-			userState.setName(String(data.session.user.user_metadata.name));
-		}
 		this.isLoading = false;
 
 		supabase.auth.onAuthStateChange((_event, session) => {
 			this.session = session;
-			if (session?.user?.user_metadata?.name) {
-				userState.setName(String(session.user.user_metadata.name));
-			}
 		});
 	}
 
@@ -61,7 +54,6 @@ class AuthState {
 
 	async updateDisplayName(name: string) {
 		const trimmed = name.trim().slice(0, 15);
-		userState.setName(trimmed);
 		const { data, error } = await supabase.auth.updateUser({
 			data: { name: trimmed }
 		});
