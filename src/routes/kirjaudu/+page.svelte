@@ -2,17 +2,22 @@
 	import { authState } from '$lib/auth.svelte';
 	import { goto } from '$app/navigation';
 
-	// step: 'email' → enter email, 'code' → enter 6-digit code
-	let step = $state<'email' | 'code'>('email');
+	// step: 'email' → enter email, 'code' → enter 6-digit code, 'name' → set display name
+	let step = $state<'email' | 'code' | 'name'>('email');
 	let email = $state('');
 	let code = $state('');
+	let name = $state('');
 	let error = $state('');
 	let loading = $state(false);
 
-	// Redirect away if already signed in
+	// Redirect away if already signed in and has a display name; otherwise prompt for name
 	$effect(() => {
 		if (!authState.isLoading && authState.session) {
-			goto('/');
+			if (authState.displayName) {
+				goto('/');
+			} else {
+				step = 'name';
+			}
 		}
 	});
 
@@ -41,7 +46,22 @@
 			error = 'Väärä koodi. Yritä uudelleen.';
 			code = '';
 		}
-		// on success, onAuthStateChange fires → authState.session is set → $effect above redirects
+		// on success, onAuthStateChange fires → $effect above redirects or opens 'name' step
+	}
+
+	async function handleSaveName(e: SubmitEvent) {
+		e.preventDefault();
+		const trimmed = name.trim();
+		if (!trimmed) return;
+		loading = true;
+		error = '';
+		const result = await authState.updateDisplayName(trimmed);
+		loading = false;
+		if (result.error) {
+			error = 'Virhe nimen tallennuksessa: ' + result.error.message;
+		} else {
+			goto('/');
+		}
 	}
 </script>
 
@@ -71,7 +91,7 @@
 		</form>
 		<p class="text-sm text-white/50">Saat 6-numeroisen koodin sähköpostiisi.</p>
 
-	{:else}
+	{:else if step === 'code'}
 		<div class="w-full max-w-sm rounded-xl bg-white/10 p-4 text-center text-sm text-white/70">
 			Koodi lähetetty osoitteeseen <strong class="text-white">{email}</strong>
 		</div>
@@ -104,5 +124,30 @@
 		>
 			← Vaihda sähköpostiosoite
 		</button>
+	{:else}
+		<p class="text-center text-sm text-white/70">
+			Mikä on etunimesi? Sitä käytetään suorituksissa.
+		</p>
+		<form onsubmit={handleSaveName} class="flex w-full max-w-sm flex-col gap-3">
+			<input
+				type="text"
+				bind:value={name}
+				placeholder="Etunimi (esim. Matti)"
+				maxlength={15}
+				required
+				autofocus
+				class="w-full rounded-xl border border-white/20 bg-white/15 px-4 py-3 text-white placeholder-white/50 backdrop-blur-sm outline-none focus:border-white/50 focus:bg-white/20"
+			/>
+			<button
+				type="submit"
+				disabled={loading || !name.trim()}
+				class="rounded-xl bg-pink-500 px-4 py-3 font-semibold text-white shadow-lg transition-all hover:bg-pink-400 disabled:opacity-60"
+			>
+				{loading ? 'Tallennetaan…' : 'Jatka'}
+			</button>
+			{#if error}
+				<p class="text-sm text-red-300">{error}</p>
+			{/if}
+		</form>
 	{/if}
 </div>

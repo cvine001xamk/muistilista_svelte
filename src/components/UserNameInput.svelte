@@ -1,11 +1,18 @@
 <script lang="ts">
 	import { userState } from '$lib/user.svelte';
+	import { authState } from '$lib/auth.svelte';
 
 	function handleInput(e: Event) {
 		const target = e.target as HTMLInputElement;
 		// Keep first name: trim leading spaces, take first token, max 15 chars
 		const firstWord = target.value.trimStart().split(' ')[0] || '';
 		userState.setName(firstWord.slice(0, 15));
+	}
+
+	function handleBlur() {
+		if (authState.session && userState.name.trim() && userState.name !== authState.displayName) {
+			authState.updateDisplayName(userState.name);
+		}
 	}
 </script>
 
@@ -39,6 +46,7 @@
 			type="text"
 			value={userState.name}
 			oninput={handleInput}
+			onblur={handleBlur}
 			placeholder="Nimi"
 			maxlength="15"
 			class="absolute inset-0 w-full bg-transparent text-xs font-medium text-white placeholder-white/40 focus:outline-none sm:text-sm"

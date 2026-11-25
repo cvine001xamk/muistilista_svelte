@@ -160,10 +160,13 @@ Features Supabase Realtime subscription for live updates. Includes a dialog for 
 
 A modern, offline-first shared shopping list with:
 
-- Quick add input for item names
+- Quick add input for item names and optional amounts (`määrä`)
+- **Inline editing** — tap an uncompleted item's name or amount to edit in-place (`Enter` / OK to save, `Escape` / ✕ to cancel)
+- **Quick-add chips (`Viimeisimmät`)** — remembers up to 12 recently used items in `localStorage` and surfaces up to 8 not currently on the active list as 1-tap `+ <tuote>` chips
+- **Duplicate detection** — adding an item that is already in *Ostetut* automatically unchecks and restores it; adding an item already in *Ostamatta* shows a toast instead of duplicating
 - Check/uncheck items with smooth visual states
 - Single-tap removal with instant "Kumoa" (Undo) toast
-- Filters (All, Unchecked, Checked) and "Poista ostetut" action
+- Filters (All, Unchecked, Checked) with auto-reset to "Kaikki" when completed items are cleared, plus "Poista ostetut" action
 - **Drag-to-reorder** for uncompleted items (supports desktop mouse drag and mobile touch gestures with `localStorage` order persistence)
 - Real-time synchronization across devices via Supabase Realtime channel and local IndexedDB cache (requires `ostokset` table in `supabase_realtime` publication)
 
@@ -188,6 +191,13 @@ A Finnish seasonal produce calendar showing what fruits, vegetables, root vegeta
 - **Mobile**: Bottom tab bar with floating action button (FAB) for adding tasks
 - **Neon-style** animated logo with flicker and glow effects
 - iOS safe area support (`env(safe-area-inset-bottom)`)
+- Local device user name input (`UserNameInput`) and sign-out button in the upper right corner
+
+### 8. 🔐 Authentication (`/kirjaudu`)
+
+- **Passwordless 6-digit Email OTP** (`signInWithOtp` + `verifyOtp`) — users enter their email and type the 6-digit code directly inside the PWA without leaving to an external browser
+- **Client-side route guard** in `+layout.svelte` — redirects unauthenticated users to `/kirjaudu` and displays a loading splash while resolving the session
+- **Persistent session** (`persistSession`, `autoRefreshToken`) stored in `localStorage` via Supabase Auth
 
 ---
 
@@ -250,15 +260,19 @@ muistilista_svelte/
 │   ├── app.html                   # HTML shell with PWA manifest link
 │   ├── service-worker.ts          # Custom service worker (cache-first assets, network-first API)
 │   ├── components/
-│   │   ├── Navigaatio.svelte      # Responsive nav (desktop top bar + mobile bottom tabs)
+│   │   ├── Navigaatio.svelte      # Responsive nav (desktop top bar + mobile bottom tabs + sign-out)
 │   │   ├── Tehtavat.svelte        # Task list with search/filter
 │   │   ├── Tehtavarivi.svelte     # Individual task card (color-coded)
 │   │   ├── TehtavaDialog.svelte   # Task detail/edit/complete/delete dialog
-│   │   └── SuoritusDialog.svelte  # Completion edit/delete dialog
+│   │   ├── SuoritusDialog.svelte  # Completion edit/delete dialog
+│   │   └── UserNameInput.svelte   # Local device performer name input
 │   ├── lib/
+│   │   ├── auth.svelte.ts         # AuthState singleton (Supabase 6-digit email OTP)
 │   │   ├── index.ts               # Utility functions (haeTehtavat, haeSuoritukset, laskeJaljellaOlevaAika)
+│   │   ├── ostoslista.svelte.ts   # OstoslistaState singleton (offline-first IDB + Realtime)
 │   │   ├── state.svelte.ts        # GlobalState singleton (Svelte 5 runes, Realtime subscriptions)
-│   │   ├── supabase.ts            # Supabase client initialization
+│   │   ├── supabase.ts            # Supabase client initialization (with auth session persistence)
+│   │   ├── user.svelte.ts         # Local user profile state (localStorage)
 │   │   ├── data/
 │   │   │   └── seasonalProduceData.json  # Finnish seasonal produce (12 months)
 │   │   ├── fonts/
@@ -275,9 +289,11 @@ muistilista_svelte/
 │   │       ├── ShoppingIcon.svelte
 │   │       └── SquarePenIcon.svelte
 │   └── routes/
-│       ├── +layout.svelte         # Root layout (gradient bg, nav, state init)
+│       ├── +layout.svelte         # Root layout (gradient bg, auth guard, nav, state init)
 │       ├── +page.svelte           # Home — task list
 │       ├── +page.ts               # Home — data loader (RPC)
+│       ├── kirjaudu/
+│       │   └── +page.svelte       # Passwordless 6-digit email OTP login page
 │       ├── lisaa/
 │       │   └── +page.svelte       # Add new task form
 │       ├── ostoslista/
@@ -315,20 +331,19 @@ muistilista_svelte/
 
 ---
 
-### Phase 2: Authentication — Supabase Auth
+### Phase 2: Authentication — Supabase Auth (🚧 Osittain valmis / Partially Completed)
 
-> **Goal**: Secure the app with user accounts so each household can have its own private task list.
+> **Goal**: Secure the app with user accounts so each household can have its own private task list. Minimal passwordless 6-digit email OTP authentication, client-side route guarding, and session persistence are implemented; household groups and per-household RLS remain planned.
 
-| Feature                      | Description                                                                          | Priority     |
-| ---------------------------- | ------------------------------------------------------------------------------------ | ------------ |
-| **Email/password auth**      | Basic sign-up and sign-in with Supabase Auth                                         | 🔴 Critical  |
-| **Magic link auth**          | Passwordless login via email magic links                                             | 🟡 Important |
-| **OAuth providers**          | Google and/or Apple sign-in for frictionless onboarding                              | 🟡 Important |
-| **Household groups**         | Allow users to create/join a household and share tasks within the group              | 🔴 Critical  |
-| **Row Level Security (RLS)** | Enforce per-household data isolation at the database level                           | 🔴 Critical  |
-| **User profiles**            | Replace hardcoded "Tuntematon" (unknown) completion performer with actual user names | 🟡 Important |
-| **Auth-gated routes**        | Protect all routes with authentication middleware (`hooks.server.ts`)                | 🔴 Critical  |
-| **Session management**       | Handle token refresh, session expiry, and secure cookie storage                      | 🟡 Important |
+| Feature                      | Description                                                                                    | Status / Priority |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- | ----------------- |
+| **Email OTP auth (6-digit)** | Passwordless login via 6-digit email OTP code (`/kirjaudu`, works inside installed PWA)        | ✅ Implemented     |
+| **Auth-gated routes**        | Client-side route guard in `+layout.svelte` redirecting unauthenticated users to `/kirjaudu`   | ✅ Implemented     |
+| **Session management**       | Automatic token refresh and `localStorage` session persistence (`supabase.ts`) + sign-out UI   | ✅ Implemented     |
+| **OAuth providers**          | Google and/or Apple sign-in for frictionless onboarding                                        | 🟡 Important      |
+| **Household groups**         | Allow users to create/join a household and share tasks within the group                        | 🔴 Critical       |
+| **Row Level Security (RLS)** | Shared `authenticated` RLS policies documented; per-household isolation planned                | 🔴 Critical       |
+| **User profiles**            | Link completion performer (`suorittaja`) to authenticated user profile instead of local-only   | 🟡 Important      |
 
 ---
 
@@ -422,4 +437,4 @@ These items should be addressed alongside the main phases:
 
 ---
 
-_Last updated: November 18, 2026_
+_Last updated: November 25, 2026_

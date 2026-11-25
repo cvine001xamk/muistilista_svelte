@@ -11,11 +11,13 @@
  */
 
 import { supabase } from '$lib/supabase';
+import { userState } from '$lib/user.svelte';
 import type { Session, User } from '@supabase/supabase-js';
 
 class AuthState {
 	session = $state<Session | null>(null);
 	user = $derived<User | null>(this.session?.user ?? null);
+	displayName = $derived<string>((this.user?.user_metadata?.name as string | undefined) ?? '');
 	isLoading = $state(true);
 
 	/**
@@ -25,10 +27,16 @@ class AuthState {
 	async init() {
 		const { data } = await supabase.auth.getSession();
 		this.session = data.session;
+		if (data.session?.user?.user_metadata?.name) {
+			userState.setName(String(data.session.user.user_metadata.name));
+		}
 		this.isLoading = false;
 
 		supabase.auth.onAuthStateChange((_event, session) => {
 			this.session = session;
+			if (session?.user?.user_metadata?.name) {
+				userState.setName(String(session.user.user_metadata.name));
+			}
 		});
 	}
 
@@ -48,6 +56,18 @@ class AuthState {
 	 */
 	async verifyOtp(email: string, token: string) {
 		const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+		return { error };
+	}
+
+	async updateDisplayName(name: string) {
+		const trimmed = name.trim().slice(0, 15);
+		userState.setName(trimmed);
+		const { data, error } = await supabase.auth.updateUser({
+			data: { name: trimmed }
+		});
+		if (!error && data.user && this.session) {
+			this.session = { ...this.session, user: data.user };
+		}
 		return { error };
 	}
 
