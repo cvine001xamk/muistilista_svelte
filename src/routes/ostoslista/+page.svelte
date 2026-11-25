@@ -20,6 +20,42 @@
 	let filter = $state<'all' | 'active' | 'completed'>('all');
 	let nameInputRef = $state<HTMLInputElement | null>(null);
 
+	// --- Inline editing state ---
+	let editingId = $state<string | null>(null);
+	let editName = $state('');
+	let editAmount = $state('');
+
+	// --- Recent items (quick-add chips) ---
+	const RECENT_KEY = 'ostoslista_recent_items';
+	let recentItems = $state<string[]>([]);
+
+	function loadRecentItems() {
+		try {
+			const raw = localStorage.getItem(RECENT_KEY);
+			if (raw) {
+				const parsed = JSON.parse(raw);
+				if (Array.isArray(parsed)) {
+					recentItems = parsed.filter((x): x is string => typeof x === 'string' && x.trim().length > 0);
+					return;
+				}
+			}
+			recentItems = [];
+		} catch {
+			recentItems = [];
+		}
+	}
+
+	function recordRecentItem(name: string) {
+		const trimmed = name.trim();
+		if (!trimmed) return;
+		const lower = trimmed.toLowerCase();
+		const next = [trimmed, ...recentItems.filter((i) => i.toLowerCase() !== lower)].slice(0, 12);
+		recentItems = next;
+		try {
+			localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+		} catch {}
+	}
+
 	// --- Drag-to-reorder state ---
 	let draggedId = $state<string | null>(null);
 	let dragOverId = $state<string | null>(null);
@@ -51,6 +87,7 @@
 
 	$effect(() => {
 		loadSortOrder();
+		loadRecentItems();
 	});
 
 	const allItems = $derived(
@@ -61,6 +98,22 @@
 
 	const uncompletedItems = $derived(allItems.filter((item) => !item.completed));
 	const completedItems = $derived(allItems.filter((item) => item.completed));
+
+	const suggestedItems = $derived(
+		recentItems
+			.filter(
+				(name) =>
+					!uncompletedItems.some((item) => item.nimi.trim().toLowerCase() === name.toLowerCase())
+			)
+			.slice(0, 8)
+	);
+
+	// Auto-reset filter when completed items are cleared
+	$effect(() => {
+		if (filter === 'completed' && completedItems.length === 0) {
+			filter = 'all';
+		}
+	});
 
 	/**
 	 * Uncompleted items sorted by the user's custom drag order.
@@ -184,8 +237,26 @@
 		const trimmedAmount = newItemAmount.trim();
 		if (!trimmedName || isSubmitting) return;
 
+		const normalized = trimmedName.toLowerCase();
+		const existing = allItems.find((item) => item.nimi.trim().toLowerCase() === normalized);
+		if (existing) {
+			isSubmitting = true;
+			if (existing.completed) {
+				await ostoslistaState.toggleCompleted(existing);
+				toastState.show(`"${existing.nimi}" palautettu ostoslistalle`);
+			} else {
+				toastState.show(`"${existing.nimi}" on jo ostoslistalla`);
+			}
+			newItemName = '';
+			newItemAmount = '';
+			isSubmitting = false;
+			nameInputRef?.focus();
+			return;
+		}
+
 		isSubmitting = true;
 		await ostoslistaState.addItem(trimmedName, trimmedAmount || undefined);
+		recordRecentItem(trimmedName);
 		newItemName = '';
 		newItemAmount = '';
 		isSubmitting = false;
@@ -194,7 +265,54 @@
 		nameInputRef?.focus();
 	}
 
+	async function addQuickItem(name: string) {
+		if (isSubmitting) return;
+		const normalized = name.trim().toLowerCase();
+		const existing = allItems.find((item) => item.nimi.trim().toLowerCase() === normalized);
+		if (existing) {
+			if (existing.completed) {
+				await ostoslistaState.toggleCompleted(existing);
+				toastState.show(`"${existing.nimi}" palautettu ostoslistalle`);
+			}
+			return;
+		}
+		await ostoslistaState.addItem(name);
+		recordRecentItem(name);
+	}
+
+	function startEditing(item: Ostos) {
+		if (item.completed) return;
+		editingId = String(item.id);
+		editName = item.nimi;
+		editAmount = item.maara ?? '';
+	}
+
+	function cancelEdit() {
+		editingId = null;
+		editName = '';
+		editAmount = '';
+	}
+
+	async function saveEdit(item: Ostos) {
+		const trimmedName = editName.trim();
+		if (!trimmedName) {
+			cancelEdit();
+			return;
+		}
+		const trimmedAmount = editAmount.trim() || null;
+		if (trimmedName !== item.nimi || trimmedAmount !== (item.maara ?? null)) {
+			await ostoslistaState.updateItem({
+				...item,
+				nimi: trimmedName,
+				maara: trimmedAmount
+			});
+			recordRecentItem(trimmedName);
+		}
+		cancelEdit();
+	}
+
 	async function removeItem(item: Ostos) {
+		recordRecentItem(item.nimi);
 		await ostoslistaState.removeItem(item.id);
 
 		// Non-blocking Undo notification
@@ -208,6 +326,9 @@
 	}
 
 	async function toggleCompleted(item: Ostos) {
+		if (!item.completed) {
+			recordRecentItem(item.nimi);
+		}
 		await ostoslistaState.toggleCompleted(item);
 	}
 
@@ -289,6 +410,22 @@
 			<span class="hidden sm:inline">Lisää</span>
 		</button>
 	</form>
+
+	<!-- Quick-add chips for recent items -->
+	{#if suggestedItems.length > 0}
+		<div class="flex flex-wrap items-center gap-1.5" transition:fade={{ duration: 150 }}>
+			<span class="mr-0.5 text-xs text-white/50">Viimeisimmät:</span>
+			{#each suggestedItems as name (name)}
+				<button
+					type="button"
+					onclick={() => addQuickItem(name)}
+					class="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white/85 transition-all hover:border-white/30 hover:bg-white/20 active:scale-95"
+				>
+					+ {name}
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	<!-- Filter pills & Clear completed -->
 	{#if allItems.length > 0}
@@ -414,8 +551,8 @@
 						<div class="-ml-1 w-5 flex-shrink-0"></div>
 					{/if}
 
-					<!-- Custom Checkbox & Label -->
-					<label class="flex flex-grow cursor-pointer select-none items-center gap-3.5">
+					<!-- Custom Checkbox -->
+					<label class="flex cursor-pointer select-none items-center">
 						<input
 							type="checkbox"
 							checked={item.completed}
@@ -438,8 +575,54 @@
 								</svg>
 							{/if}
 						</div>
+					</label>
 
-						<div class="flex flex-wrap items-center gap-2">
+					<!-- Item Label or Inline Editor -->
+					{#if editingId === strId}
+						<form
+							onsubmit={(e) => {
+								e.preventDefault();
+								saveEdit(item);
+							}}
+							class="flex min-w-0 flex-grow items-center gap-1.5"
+						>
+							<input
+								type="text"
+								bind:value={editName}
+								onkeydown={(e) => e.key === 'Escape' && cancelEdit()}
+								class="min-w-0 flex-grow rounded-lg border border-white/30 bg-white/15 px-2.5 py-1 text-sm text-white placeholder-white/40 focus:border-white/60 focus:outline-none"
+								placeholder="Tuote"
+								required
+							/>
+							<input
+								type="text"
+								bind:value={editAmount}
+								onkeydown={(e) => e.key === 'Escape' && cancelEdit()}
+								class="w-20 flex-shrink-0 rounded-lg border border-white/30 bg-white/15 px-2 py-1 text-xs text-white placeholder-white/40 focus:border-white/60 focus:outline-none"
+								placeholder="Määrä"
+							/>
+							<button
+								type="submit"
+								class="rounded-lg bg-emerald-500/80 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-500"
+							>
+								OK
+							</button>
+							<button
+								type="button"
+								onclick={cancelEdit}
+								class="rounded-lg bg-white/10 px-2 py-1 text-xs text-white/70 hover:bg-white/20"
+							>
+								✕
+							</button>
+						</form>
+					{:else}
+						<button
+							type="button"
+							onclick={() => startEditing(item)}
+							class="flex min-w-0 flex-grow flex-wrap items-center gap-2 text-left {item.completed
+								? 'cursor-default'
+								: 'cursor-text'}"
+						>
 							<span
 								class="text-base font-medium text-white transition-all
 								{item.completed ? 'text-white/50 line-through' : 'text-white'}"
@@ -454,8 +637,8 @@
 									{item.maara}
 								</span>
 							{/if}
-						</div>
-					</label>
+						</button>
+					{/if}
 
 					<!-- Remove button -->
 					<button
