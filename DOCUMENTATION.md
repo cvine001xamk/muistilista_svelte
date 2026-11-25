@@ -22,32 +22,32 @@
 
 ### Key Concepts
 
-| Finnish Term | English | Description |
-|---|---|---|
-| **Tehtävä** | Task | A recurring or one-time household chore |
-| **Suoritus** | Completion | A recorded instance of completing a task |
-| **Suoritusväli** | Interval | Number of days between expected completions |
+| Finnish Term      | English       | Description                                  |
+| ----------------- | ------------- | -------------------------------------------- |
+| **Tehtävä**       | Task          | A recurring or one-time household chore      |
+| **Suoritus**      | Completion    | A recorded instance of completing a task     |
+| **Suoritusväli**  | Interval      | Number of days between expected completions  |
 | **Kertasuoritus** | One-time task | A task that is auto-deleted after completion |
-| **Ostoslista** | Shopping list | Shared grocery/shopping list |
-| **Sesongissa** | In season | Seasonal produce calendar for Finland |
+| **Ostoslista**    | Shopping list | Shared grocery/shopping list                 |
+| **Sesongissa**    | In season     | Seasonal produce calendar for Finland        |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Version |
-|---|---|---|
-| **Framework** | SvelteKit | 2.x |
-| **UI Library** | Svelte | 5.x (Runes mode) |
-| **Styling** | TailwindCSS | 3.4 |
-| **Component Library** | Melt UI | 0.86 |
-| **Backend / Database** | Supabase (PostgreSQL) | — |
-| **Real-time** | Supabase Realtime (WebSockets) | — |
-| **Date Formatting** | date-fns | 4.x |
-| **Icons** | Custom SVG components + Lucide | — |
-| **Deployment** | Vercel (Node.js 26.x) | — |
-| **Language** | TypeScript | 5.x |
-| **Fonts** | Gabarito (body), Pacifico (headings) | Custom |
+| Layer                  | Technology                           | Version          |
+| ---------------------- | ------------------------------------ | ---------------- |
+| **Framework**          | SvelteKit                            | 2.x              |
+| **UI Library**         | Svelte                               | 5.x (Runes mode) |
+| **Styling**            | TailwindCSS                          | 3.4              |
+| **Component Library**  | Melt UI                              | 0.86             |
+| **Backend / Database** | Supabase (PostgreSQL)                | —                |
+| **Real-time**          | Supabase Realtime (WebSockets)       | —                |
+| **Date Formatting**    | date-fns                             | 4.x              |
+| **Icons**              | Custom SVG components + Lucide       | —                |
+| **Deployment**         | Vercel (Node.js 26.x)                | —                |
+| **Language**           | TypeScript                           | 5.x              |
+| **Fonts**              | Gabarito (body), Pacifico (headings) | Custom           |
 
 ---
 
@@ -96,6 +96,7 @@ The app uses a **singleton `GlobalState` class** powered by Svelte 5 runes (`$st
 ### Service Worker
 
 A custom service worker implements a **network-first strategy with cache fallback**:
+
 - Build artifacts and static files are pre-cached on install
 - Dynamic requests try the network first; on failure, serve from cache
 - Old caches are purged on activation
@@ -114,15 +115,16 @@ A custom service worker implements a **network-first strategy with cache fallbac
 
 The home page displays all recurring household tasks as **color-coded cards** sorted by urgency:
 
-| Remaining Time | Color | Meaning |
-|---|---|---|
-| ≤ 2 days | 🔴 Red | Overdue / Critical |
-| ≤ 3 days | 🟠 Orange | Due soon |
-| ≤ 5 days | 🟡 Yellow | Approaching |
-| ≤ 14 days | 🟢 Green | On track |
-| > 14 days | 🟩 Emerald | Plenty of time |
+| Remaining Time | Color      | Meaning            |
+| -------------- | ---------- | ------------------ |
+| ≤ 2 days       | 🔴 Red     | Overdue / Critical |
+| ≤ 3 days       | 🟠 Orange  | Due soon           |
+| ≤ 5 days       | 🟡 Yellow  | Approaching        |
+| ≤ 14 days      | 🟢 Green   | On track           |
+| > 14 days      | 🟩 Emerald | Plenty of time     |
 
 Each task card shows:
+
 - Task name
 - Last completion date
 - Time remaining (human-readable, Finnish locale)
@@ -130,6 +132,7 @@ Each task card shows:
 - One-time task indicator (🔲 icon)
 
 **Clicking a task** opens a dialog with options to:
+
 - ✅ **Complete** (mark as done — requires confirmation tap)
 - ✏️ **Edit** (name, interval, one-time toggle)
 - 🗑️ **Delete** (requires confirmation tap)
@@ -138,6 +141,7 @@ Each task card shows:
 ### 2. ➕ Add Task (`/lisaa`)
 
 A form to create new tasks with:
+
 - Task name (required)
 - Interval in days (required)
 - One-time task checkbox
@@ -145,6 +149,7 @@ A form to create new tasks with:
 ### 3. 📊 Completion History (`/suoritukset`)
 
 A sortable table of the latest 100 completions showing:
+
 - Task name (clickable to filter)
 - Completion date (clickable to edit)
 - Who completed it
@@ -154,6 +159,7 @@ Features Supabase Realtime subscription for live updates. Includes a dialog for 
 ### 4. 🛒 Shopping List (`/ostoslista`)
 
 A modern, offline-first shared shopping list with:
+
 - Quick add input for item names
 - Check/uncheck items with smooth visual states
 - Single-tap removal with instant "Kumoa" (Undo) toast
@@ -164,6 +170,7 @@ A modern, offline-first shared shopping list with:
 ### 5. 🍎 Seasonal Produce Calendar (`/sesongissa`)
 
 A Finnish seasonal produce calendar showing what fruits, vegetables, root vegetables, mushrooms, and wild plants are in season for each month. Features:
+
 - Month-to-month navigation (with wrap-around)
 - Categorized cards with distinct color schemes
 - Finnish alphabetical sorting
@@ -219,17 +226,17 @@ erDiagram
 
 ### RPC Functions
 
-| Function | Description |
-|---|---|
+| Function                            | Description                                                     |
+| ----------------------------------- | --------------------------------------------------------------- |
 | `get_tehtavat_with_latest_suoritus` | Returns all tasks joined with their most recent completion date |
 
 ### Realtime Subscriptions
 
-| Channel | Tables | Events | Notes |
-|---|---|---|---|
-| `global-tehtavat-changes` | `tehtavat`, `suoritukset` | INSERT, UPDATE, DELETE | Active |
-| `suoritukset-changes` | `suoritukset` | INSERT, UPDATE, DELETE | Active |
-| `ostokset-changes` | `ostokset` | INSERT, UPDATE, DELETE | Code is ready; requires `ALTER PUBLICATION supabase_realtime ADD TABLE ostokset;` in Supabase to activate |
+| Channel                   | Tables                    | Events                 | Notes                                                                                                     |
+| ------------------------- | ------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| `global-tehtavat-changes` | `tehtavat`, `suoritukset` | INSERT, UPDATE, DELETE | Active                                                                                                    |
+| `suoritukset-changes`     | `suoritukset`             | INSERT, UPDATE, DELETE | Active                                                                                                    |
+| `ostokset-changes`        | `ostokset`                | INSERT, UPDATE, DELETE | Code is ready; requires `ALTER PUBLICATION supabase_realtime ADD TABLE ostokset;` in Supabase to activate |
 
 ---
 
@@ -312,16 +319,16 @@ muistilista_svelte/
 
 > **Goal**: Secure the app with user accounts so each household can have its own private task list.
 
-| Feature | Description | Priority |
-|---|---|---|
-| **Email/password auth** | Basic sign-up and sign-in with Supabase Auth | 🔴 Critical |
-| **Magic link auth** | Passwordless login via email magic links | 🟡 Important |
-| **OAuth providers** | Google and/or Apple sign-in for frictionless onboarding | 🟡 Important |
-| **Household groups** | Allow users to create/join a household and share tasks within the group | 🔴 Critical |
-| **Row Level Security (RLS)** | Enforce per-household data isolation at the database level | 🔴 Critical |
-| **User profiles** | Replace hardcoded "Tuntematon" (unknown) completion performer with actual user names | 🟡 Important |
-| **Auth-gated routes** | Protect all routes with authentication middleware (`hooks.server.ts`) | 🔴 Critical |
-| **Session management** | Handle token refresh, session expiry, and secure cookie storage | 🟡 Important |
+| Feature                      | Description                                                                          | Priority     |
+| ---------------------------- | ------------------------------------------------------------------------------------ | ------------ |
+| **Email/password auth**      | Basic sign-up and sign-in with Supabase Auth                                         | 🔴 Critical  |
+| **Magic link auth**          | Passwordless login via email magic links                                             | 🟡 Important |
+| **OAuth providers**          | Google and/or Apple sign-in for frictionless onboarding                              | 🟡 Important |
+| **Household groups**         | Allow users to create/join a household and share tasks within the group              | 🔴 Critical  |
+| **Row Level Security (RLS)** | Enforce per-household data isolation at the database level                           | 🔴 Critical  |
+| **User profiles**            | Replace hardcoded "Tuntematon" (unknown) completion performer with actual user names | 🟡 Important |
+| **Auth-gated routes**        | Protect all routes with authentication middleware (`hooks.server.ts`)                | 🔴 Critical  |
+| **Session management**       | Handle token refresh, session expiry, and secure cookie storage                      | 🟡 Important |
 
 ---
 
@@ -329,15 +336,15 @@ muistilista_svelte/
 
 > **Goal**: Package the web app as a native Android (and optionally iOS) app for better mobile experience and access to native APIs.
 
-| Feature | Description | Priority |
-|---|---|---|
-| **Capacitor setup** | Initialize Capacitor project with Android platform | 🔴 Critical |
-| **Adapter swap** | Switch from `adapter-vercel` to `adapter-static` for Capacitor builds (with separate build config) | 🔴 Critical |
-| **Native splash screen** | Custom splash screen with Muistilista branding | 🟡 Important |
-| **Status bar theming** | Match the gradient purple theme in the native status bar | 🟡 Important |
-| **Haptic feedback** | Add vibration feedback on task completion and destructive actions | 🟢 Nice to have |
-| **Native push notifications** | Use Firebase Cloud Messaging (FCM) for reliable push notifications on Android | 🟡 Important |
-| **Deep links** | Support deep linking to specific tasks or views | 🟢 Nice to have |
+| Feature                       | Description                                                                                        | Priority        |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- | --------------- |
+| **Capacitor setup**           | Initialize Capacitor project with Android platform                                                 | 🔴 Critical     |
+| **Adapter swap**              | Switch from `adapter-vercel` to `adapter-static` for Capacitor builds (with separate build config) | 🔴 Critical     |
+| **Native splash screen**      | Custom splash screen with Muistilista branding                                                     | 🟡 Important    |
+| **Status bar theming**        | Match the gradient purple theme in the native status bar                                           | 🟡 Important    |
+| **Haptic feedback**           | Add vibration feedback on task completion and destructive actions                                  | 🟢 Nice to have |
+| **Native push notifications** | Use Firebase Cloud Messaging (FCM) for reliable push notifications on Android                      | 🟡 Important    |
+| **Deep links**                | Support deep linking to specific tasks or views                                                    | 🟢 Nice to have |
 
 ---
 
@@ -345,13 +352,13 @@ muistilista_svelte/
 
 > **Goal**: Provide at-a-glance task status and quick-complete actions directly from the Android home screen.
 
-| Feature | Description | Priority |
-|---|---|---|
-| **Overdue tasks widget** | A compact widget showing the count and list of overdue/due-soon tasks | 🔴 Critical |
-| **Quick-complete action** | Tap a task in the widget to mark it as completed without opening the app | 🟡 Important |
-| **Shopping list widget** | A checklist widget for the shopping list with toggle support | 🟢 Nice to have |
-| **Widget refresh** | Periodic background refresh + on-data-change push updates | 🟡 Important |
-| **Capacitor plugin** | Use `@nicepkg/capacitor-android-widget` or a custom Capacitor plugin | 🔴 Critical |
+| Feature                   | Description                                                              | Priority        |
+| ------------------------- | ------------------------------------------------------------------------ | --------------- |
+| **Overdue tasks widget**  | A compact widget showing the count and list of overdue/due-soon tasks    | 🔴 Critical     |
+| **Quick-complete action** | Tap a task in the widget to mark it as completed without opening the app | 🟡 Important    |
+| **Shopping list widget**  | A checklist widget for the shopping list with toggle support             | 🟢 Nice to have |
+| **Widget refresh**        | Periodic background refresh + on-data-change push updates                | 🟡 Important    |
+| **Capacitor plugin**      | Use `@nicepkg/capacitor-android-widget` or a custom Capacitor plugin     | 🔴 Critical     |
 
 ---
 
@@ -359,21 +366,16 @@ muistilista_svelte/
 
 > **Goal**: Polish the user experience with features that make daily use delightful and efficient.
 
-| Feature | Description | Priority |
-|---|---|---|
-| **Pull-to-refresh** | Native-feeling pull-to-refresh gesture on mobile | 🟡 Important |
-| **Task categories / tags** | Group tasks by room, type, or custom tags (e.g., "Kitchen", "Bathroom", "Garden") | 🟡 Important |
-| **Scheduled reminders** | Set specific time-of-day reminders for tasks that are due, via push notification | 🔴 High impact |
-| **Task history chart** | Visual chart showing completion frequency over time | 🟢 Nice to have |
-| **Dark / light theme toggle** | Currently hardcoded to a purple gradient; add theme switching | 🟢 Nice to have |
-| **Drag-to-reorder** | Allow manual reordering of tasks (pin important ones to the top) | 🟢 Nice to have |
-| **Onboarding flow** | First-launch tutorial explaining the app concept for new users | 🟡 Important |
-| **Multi-language support (i18n)** | Add English language support alongside Finnish | 🟢 Nice to have |
-| **Accessibility audit** | ARIA labels, keyboard navigation, screen reader support, focus management | 🟡 Important |
-| **Smart task suggestions** | Use AI (Gemini API key already present) to suggest common household tasks during onboarding | 🟢 Nice to have |
-| **Shopping list real-time DB activation** | Run `ALTER PUBLICATION supabase_realtime ADD TABLE ostokset;` in Supabase SQL editor — client code and subscription are complete, waiting on DB replication activation | 🔴 High impact (Backend config) |
-| **Task "Snooze" / lykkää** | Postpone a task's due date by N days without marking it complete — add a "Lykkää X päivää" button in the task dialog | 🟡 Important |
-| **Completion streak counter** | Show per-task streak count (consecutive on-time completions) on the task card — motivates consistent upkeep | 🟢 Nice to have |
+| Feature                       | Description                                                                                                          | Priority        |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------- |
+| **Pull-to-refresh**           | Native-feeling pull-to-refresh gesture on mobile                                                                     | 🟡 Important    |
+| **Task categories / tags**    | Group tasks by room, type, or custom tags (e.g., "Kitchen", "Bathroom", "Garden")                                    | 🟡 Important    |
+| **Scheduled reminders**       | Set specific time-of-day reminders for tasks that are due, via push notification                                     | 🔴 High impact  |
+| **Dark / light theme toggle** | Currently hardcoded to a purple gradient; add theme switching                                                        | 🟢 Nice to have |
+| **Drag-to-reorder**           | Allow manual reordering of tasks (pin important ones to the top)                                                     | 🟢 Nice to have |
+| **Onboarding flow**           | First-launch tutorial explaining the app concept for new users                                                       | 🟡 Important    |
+| **Accessibility audit**       | ARIA labels, keyboard navigation, screen reader support, focus management                                            | 🟡 Important    |
+| **Task "Snooze" / lykkää**    | Postpone a task's due date by N days without marking it complete — add a "Lykkää X päivää" button in the task dialog | 🟡 Important    |
 
 ---
 
@@ -411,13 +413,13 @@ gantt
 
 These items should be addressed alongside the main phases:
 
-| Item | Description |
-|---|---|
-| ⚠️ **Exposed secrets in `.env`** | Supabase anon key and Gemini API key are committed to git. Move to environment-only variables and rotate keys. |
+| Item                             | Description                                                                                                                                                       |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ⚠️ **Exposed secrets in `.env`** | Supabase anon key and Gemini API key are committed to git. Move to environment-only variables and rotate keys.                                                    |
 | ✅ **Performer name (pre-auth)** | Added local device user name input in the upper right corner with continuous flashing cursor; used as `suorittaja` on completions instead of static "Tuntematon". |
-| 🔧 **`vite-plugin-pwa` unused** | Listed as a dependency but not configured in `vite.config.ts`. Either integrate or remove. |
-| 🔧 **CSR-only but doc says SSR** | `+layout.ts` exports `ssr = false` making this a pure CSR/PWA; the architecture section still mentions "SSR layout". Update or clarify. |
+| 🔧 **`vite-plugin-pwa` unused**  | Listed as a dependency but not configured in `vite.config.ts`. Either integrate or remove.                                                                        |
+| 🔧 **CSR-only but doc says SSR** | `+layout.ts` exports `ssr = false` making this a pure CSR/PWA; the architecture section still mentions "SSR layout". Update or clarify.                           |
 
 ---
 
-*Last updated: November 18, 2026*
+_Last updated: November 18, 2026_
