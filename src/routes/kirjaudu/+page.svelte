@@ -99,9 +99,12 @@
 			<input
 				type="text"
 				inputmode="numeric"
-				pattern="[0-9]{6}"
+				autocomplete="one-time-code"
 				maxlength={6}
-				bind:value={code}
+				value={code}
+				oninput={(e) => {
+					code = e.currentTarget.value.replace(/\D/g, '').slice(0, 6);
+				}}
 				placeholder="123456"
 				required
 				autofocus
