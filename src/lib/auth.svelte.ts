@@ -1,5 +1,8 @@
 /**
- * auth.svelte.ts — Auth state singleton using Supabase magic-link (OTP email).
+ * auth.svelte.ts — Auth state singleton using Supabase email OTP (6-digit code).
+ *
+ * Uses a typed OTP code instead of a magic link so the user can sign in
+ * directly inside the PWA without switching browsers.
  *
  * Usage:
  *   import { authState } from '$lib/auth.svelte';
@@ -30,17 +33,21 @@ class AuthState {
 	}
 
 	/**
-	 * Send a magic link (OTP) to the given email address.
-	 * Returns { error } — null error means the email was sent successfully.
+	 * Send a 6-digit OTP code to the given email.
+	 * No emailRedirectTo → Supabase sends a code, not a clickable link.
+	 * Returns { error }.
 	 */
-	async signInWithEmail(email: string) {
-		const { error } = await supabase.auth.signInWithOtp({
-			email,
-			options: {
-				// Redirect back to the app root after clicking the magic link
-				emailRedirectTo: window.location.origin + '/'
-			}
-		});
+	async sendOtp(email: string) {
+		const { error } = await supabase.auth.signInWithOtp({ email });
+		return { error };
+	}
+
+	/**
+	 * Verify the 6-digit code the user typed in.
+	 * Returns { error }.
+	 */
+	async verifyOtp(email: string, token: string) {
+		const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
 		return { error };
 	}
 
