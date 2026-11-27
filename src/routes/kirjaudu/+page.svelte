@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { authState } from '$lib/auth.svelte';
 	import { goto } from '$app/navigation';
+	import { fade, fly } from 'svelte/transition';
 
-	// step: 'email' → enter email, 'code' → enter 6-digit code, 'name' → set display name
 	let step = $state<'email' | 'code' | 'name'>('email');
 	let email = $state('');
 	let code = $state('');
@@ -10,7 +10,6 @@
 	let error = $state('');
 	let loading = $state(false);
 
-	// Redirect away if already signed in and has a display name; otherwise prompt for name
 	$effect(() => {
 		if (!authState.isLoading && authState.session) {
 			if (authState.displayName) {
@@ -43,10 +42,9 @@
 		const result = await authState.verifyOtp(email.trim(), code.trim());
 		loading = false;
 		if (result.error) {
-			error = 'Väärä koodi. Yritä uudelleen.';
+			error = 'Väärä koodi — tarkista sähköpostisi ja yritä uudelleen.';
 			code = '';
 		}
-		// on success, onAuthStateChange fires → $effect above redirects or opens 'name' step
 	}
 
 	async function handleSaveName(e: SubmitEvent) {
@@ -63,94 +61,133 @@
 			goto('/');
 		}
 	}
+
+	const stepMeta = {
+		email: { title: 'Kirjaudu sisään', sub: 'Syötä sähköpostiosoitteesi — lähetämme sinulle kirjautumiskoodin.' },
+		code:  { title: 'Syötä koodi', sub: `Lähettämäsi koodi osoitteeseen ${email}` },
+		name:  { title: 'Mikä on nimesi?', sub: 'Nimeäsi käytetään, kun merkitset tehtäviä tehdyksi.' }
+	};
 </script>
 
-<div class="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-4">
-	<h2 class="text-2xl font-bold text-white">Kirjaudu sisään</h2>
+<div class="flex min-h-[70vh] flex-col items-center justify-center gap-8 px-4">
 
-	{#if step === 'email'}
-		<form onsubmit={handleSendCode} class="flex w-full max-w-sm flex-col gap-3">
-			<input
-				type="email"
-				bind:value={email}
-				placeholder="Sähköpostiosoite"
-				required
-				autocomplete="email"
-				class="w-full rounded-xl border border-white/20 bg-white/15 px-4 py-3 text-white placeholder-white/50 backdrop-blur-sm outline-none focus:border-white/50 focus:bg-white/20"
-			/>
-			<button
-				type="submit"
-				disabled={loading}
-				class="rounded-xl bg-pink-500 px-4 py-3 font-semibold text-white shadow-lg transition-all hover:bg-pink-400 disabled:opacity-60"
-			>
-				{loading ? 'Lähetetään…' : 'Lähetä koodi'}
-			</button>
-			{#if error}
-				<p class="text-sm text-red-300">{error}</p>
-			{/if}
-		</form>
-		<p class="text-sm text-white/50">Saat 6-numeroisen koodin sähköpostiisi.</p>
+	<!-- Branding -->
+	<div class="flex flex-col items-center gap-1">
+		<h1 class="neon text-4xl">muistilista</h1>
+	</div>
 
-	{:else if step === 'code'}
-		<div class="w-full max-w-sm rounded-xl bg-white/10 p-4 text-center text-sm text-white/70">
-			Koodi lähetetty osoitteeseen <strong class="text-white">{email}</strong>
-		</div>
-		<form onsubmit={handleVerifyCode} class="flex w-full max-w-sm flex-col gap-3">
-			<input
-				type="text"
-				inputmode="numeric"
-				autocomplete="one-time-code"
-				maxlength={6}
-				value={code}
-				oninput={(e) => {
-					code = e.currentTarget.value.replace(/\D/g, '').slice(0, 6);
-				}}
-				placeholder="123456"
-				required
-				autofocus
-				class="w-full rounded-xl border border-white/20 bg-white/15 px-4 py-4 text-center text-3xl font-bold tracking-[0.5em] text-white placeholder-white/30 backdrop-blur-sm outline-none focus:border-white/50 focus:bg-white/20"
-			/>
-			<button
-				type="submit"
-				disabled={loading || code.trim().length !== 6}
-				class="rounded-xl bg-pink-500 px-4 py-3 font-semibold text-white shadow-lg transition-all hover:bg-pink-400 disabled:opacity-60"
-			>
-				{loading ? 'Tarkistetaan…' : 'Kirjaudu'}
-			</button>
-			{#if error}
-				<p class="text-sm text-red-300">{error}</p>
-			{/if}
-		</form>
-		<button
-			onclick={() => { step = 'email'; code = ''; error = ''; }}
-			class="text-sm text-white/50 underline hover:text-white"
-		>
-			← Vaihda sähköpostiosoite
-		</button>
-	{:else}
-		<p class="text-center text-sm text-white/70">
-			Mikä on etunimesi? Sitä käytetään suorituksissa.
-		</p>
-		<form onsubmit={handleSaveName} class="flex w-full max-w-sm flex-col gap-3">
-			<input
-				type="text"
-				bind:value={name}
-				placeholder="Etunimi (esim. Matti)"
-				maxlength={15}
-				required
-				autofocus
-				class="w-full rounded-xl border border-white/20 bg-white/15 px-4 py-3 text-white placeholder-white/50 backdrop-blur-sm outline-none focus:border-white/50 focus:bg-white/20"
-			/>
-			<button
-				type="submit"
-				disabled={loading || !name.trim()}
-				class="rounded-xl bg-pink-500 px-4 py-3 font-semibold text-white shadow-lg transition-all hover:bg-pink-400 disabled:opacity-60"
-			>
-				{loading ? 'Tallennetaan…' : 'Jatka'}
-			</button>
-			{#if error}
-				<p class="text-sm text-red-300">{error}</p>
-			{/if}
-		</form>
-	{/if}
+	<!-- Card -->
+	<div class="w-full max-w-sm rounded-2xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-md">
+
+		{#key step}
+			<div in:fly={{ y: 12, duration: 220 }} class="flex flex-col gap-5">
+
+				<!-- Step header -->
+				<div class="flex flex-col gap-1 text-center">
+					<h2 class="text-xl font-bold text-white">{stepMeta[step].title}</h2>
+					{#if step === 'code'}
+						<p class="text-sm text-white/60">Koodi lähetetty osoitteeseen <strong class="text-white/90">{email}</strong></p>
+					{:else}
+						<p class="text-sm text-white/60">{stepMeta[step].sub}</p>
+					{/if}
+				</div>
+
+				{#if step === 'email'}
+					<form onsubmit={handleSendCode} class="flex flex-col gap-3">
+						<input
+							type="email"
+							bind:value={email}
+							placeholder="nimi@esimerkki.fi"
+							required
+							autocomplete="email"
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/40 outline-none transition focus:border-pink-400/60 focus:bg-white/15 focus:ring-2 focus:ring-pink-400/25"
+						/>
+						<button
+							type="submit"
+							disabled={loading || !email.trim()}
+							class="rounded-xl bg-pink-500 py-3 font-semibold text-white shadow-lg transition hover:bg-pink-400 active:scale-95 disabled:opacity-50"
+						>
+							{loading ? 'Lähetetään…' : 'Jatka →'}
+						</button>
+						{#if error}<p class="text-center text-sm text-red-300" in:fade>{error}</p>{/if}
+					</form>
+
+				{:else if step === 'code'}
+					<form onsubmit={handleVerifyCode} class="flex flex-col gap-3">
+						<input
+							type="text"
+							inputmode="numeric"
+							autocomplete="one-time-code"
+							maxlength={6}
+							value={code}
+							oninput={(e) => { code = e.currentTarget.value.replace(/\D/g, '').slice(0, 6); }}
+							placeholder="000000"
+							required
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-5 text-center text-4xl font-bold tracking-[0.6em] text-white placeholder-white/20 outline-none transition focus:border-pink-400/60 focus:bg-white/15 focus:ring-2 focus:ring-pink-400/25"
+						/>
+						<button
+							type="submit"
+							disabled={loading || code.trim().length !== 6}
+							class="rounded-xl bg-pink-500 py-3 font-semibold text-white shadow-lg transition hover:bg-pink-400 active:scale-95 disabled:opacity-50"
+						>
+							{loading ? 'Tarkistetaan…' : 'Kirjaudu'}
+						</button>
+						{#if error}<p class="text-center text-sm text-red-300" in:fade>{error}</p>{/if}
+					</form>
+					<button
+						onclick={() => { step = 'email'; code = ''; error = ''; }}
+						class="text-center text-sm text-white/40 transition hover:text-white/80"
+					>
+						← Vaihda sähköpostiosoite
+					</button>
+
+				{:else}
+					<form onsubmit={handleSaveName} class="flex flex-col gap-3">
+						<input
+							type="text"
+							bind:value={name}
+							placeholder="Etunimi"
+							maxlength={15}
+							required
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/40 outline-none transition focus:border-pink-400/60 focus:bg-white/15 focus:ring-2 focus:ring-pink-400/25"
+						/>
+						<button
+							type="submit"
+							disabled={loading || !name.trim()}
+							class="rounded-xl bg-pink-500 py-3 font-semibold text-white shadow-lg transition hover:bg-pink-400 active:scale-95 disabled:opacity-50"
+						>
+							{loading ? 'Tallennetaan…' : 'Valmis →'}
+						</button>
+						{#if error}<p class="text-center text-sm text-red-300" in:fade>{error}</p>{/if}
+					</form>
+				{/if}
+
+			</div>
+		{/key}
+
+	</div>
+
+	<!-- Step dots -->
+	<div class="flex gap-2">
+		{#each ['email', 'code', 'name'] as s}
+			<div class="h-1.5 rounded-full transition-all {step === s ? 'w-6 bg-pink-400' : 'w-1.5 bg-white/25'}"></div>
+		{/each}
+	</div>
+
 </div>
+
+<style>
+	.neon {
+		animation: flicker 1.5s infinite alternate, glow 2s infinite ease-in-out;
+	}
+	@keyframes flicker {
+		0%   { opacity: 1; filter: drop-shadow(0 0 8px #fbbf24); }
+		50%  { opacity: 0.85; filter: drop-shadow(0 0 14px #fbbf24); }
+		100% { opacity: 1; filter: drop-shadow(0 0 8px #fbbf24); }
+	}
+	@keyframes glow {
+		0%   { filter: drop-shadow(0 0 10px #fbbf24); }
+		50%  { filter: drop-shadow(0 0 22px #fbbf24); }
+		100% { filter: drop-shadow(0 0 10px #fbbf24); }
+	}
+</style>

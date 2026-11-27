@@ -65,25 +65,27 @@
 			{/if}
 		</div>
 
-		<!-- Upper right corner: User name + sign-out -->
-		<div class="flex flex-shrink-0 items-center gap-2">
-			{#if authState.displayName}
-				<span class="text-xs font-medium text-white/80 sm:text-sm">{authState.displayName}</span>
-			{/if}
+		<!-- Upper right corner: User pill (name + sign-out) -->
+		<div class="flex flex-shrink-0 items-center">
 			{#if authState.session}
-				<button
-					onclick={() => authState.signOut()}
-					title="Kirjaudu ulos"
-					class="rounded-lg bg-white/10 p-1.5 text-white/60 transition-all hover:bg-white/20 hover:text-white"
-					aria-label="Kirjaudu ulos"
-				>
-					<!-- logout icon (door-with-arrow) -->
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-						<polyline points="16 17 21 12 16 7"/>
-						<line x1="21" y1="12" x2="9" y2="12"/>
-					</svg>
-				</button>
+				<div class="flex items-center gap-0 overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm">
+					{#if authState.displayName}
+						<span class="px-3 py-1.5 text-sm font-medium text-white/90">{authState.displayName}</span>
+						<div class="h-5 w-px bg-white/20"></div>
+					{/if}
+					<button
+						onclick={() => authState.signOut()}
+						title="Kirjaudu ulos"
+						class="p-1.5 text-white/60 transition-all hover:bg-white/10 hover:text-white"
+						aria-label="Kirjaudu ulos"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+							<polyline points="16 17 21 12 16 7"/>
+							<line x1="21" y1="12" x2="9" y2="12"/>
+						</svg>
+					</button>
+				</div>
 			{/if}
 		</div>
 	</div>
@@ -107,20 +109,26 @@
 		<a href="/" class="flex-shrink-0">
 			<h1 class="neon text-2xl">muistilista</h1>
 		</a>
-		<div class="flex flex-shrink-0 items-center gap-1">
+		<div class="flex flex-shrink-0 items-center">
 			{#if authState.session}
-				<button
-					onclick={() => authState.signOut()}
-					title="Kirjaudu ulos"
-					class="rounded-lg bg-white/10 p-1.5 text-white/60 transition-all hover:bg-white/20 hover:text-white"
-					aria-label="Kirjaudu ulos"
-				>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-						<polyline points="16 17 21 12 16 7"/>
-						<line x1="21" y1="12" x2="9" y2="12"/>
-					</svg>
-				</button>
+				<div class="flex items-center gap-0 overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm">
+					{#if authState.displayName}
+						<span class="px-2.5 py-1 text-xs font-medium text-white/90">{authState.displayName}</span>
+						<div class="h-4 w-px bg-white/20"></div>
+					{/if}
+					<button
+						onclick={() => authState.signOut()}
+						title="Kirjaudu ulos"
+						class="p-1.5 text-white/60 transition-all hover:bg-white/10 hover:text-white"
+						aria-label="Kirjaudu ulos"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+							<polyline points="16 17 21 12 16 7"/>
+							<line x1="21" y1="12" x2="9" y2="12"/>
+						</svg>
+					</button>
+				</div>
 			{/if}
 		</div>
 	</div>
