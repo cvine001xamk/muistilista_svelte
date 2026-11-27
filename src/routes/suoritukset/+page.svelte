@@ -48,7 +48,7 @@
 	}
 </script>
 
-{#if completionsState.isLoading && activeSuoritukset.length === 0}
+{#if (!completionsState.initialized || completionsState.isLoading) && activeSuoritukset.length === 0}
 	<div class="max-w-full overflow-x-auto rounded-md bg-slate-800 p-1 shadow">
 		<table class="w-full table-fixed border-collapse text-sm text-slate-200">
 			<thead class="bg-slate-700 text-slate-100">
